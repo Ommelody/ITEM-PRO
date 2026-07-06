@@ -1,0 +1,16 @@
+{
+  "name": "Item Master Pro V2 — ศูนย์การแพทย์ธรรมศาสตร์",
+  "short_name": "Item Master Pro",
+  "description": "ระบบออกรหัสพัสดุ SAP — ศูนย์การแพทย์ธรรมศาสตร์",
+  "lang": "th",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d2b1e",
+  "theme_color": "#0d2b1e",
+  "icons": [
+    { "src": "icon.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
