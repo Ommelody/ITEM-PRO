@@ -123,6 +123,19 @@ input[readonly],input[disabled]{background:var(--s0);color:var(--s5);cursor:defa
 .pg:disabled{opacity:.4;cursor:default}
 .sec-divider{font-size:11px;color:var(--s4);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin:14px 0 10px;padding-top:14px;border-top:1px solid var(--s1)}
 .barcode-input{font-family:'IBM Plex Mono',monospace;letter-spacing:1px}
+/* [#2] ทำให้ placeholder ของช่อง Barcode ใช้ฟอนต์ระบบ (ไทยอ่านง่าย) — ค่าที่พิมพ์ยังเป็น monospace */
+.barcode-input::placeholder{font-family:'IBM Plex Sans Thai',sans-serif;letter-spacing:0}
+/* [#6] ปุ่มเลือกหมวดในหน้าจัดการข้อมูลหลัก */
+.mcat-btn{padding:9px 16px;border:1px solid var(--s2);background:#fff;border-radius:10px;font-size:13px;font-weight:600;color:var(--s6);cursor:pointer;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.mcat-btn:hover{border-color:var(--g1);color:var(--g7)}
+.mcat-btn.active{background:var(--g7);color:#fff;border-color:var(--g7)}
+.master-section{display:none}
+.master-section.active{display:block}
+/* [#3] ปุ่มก็อปปี้ในป็อบอัพ */
+.copy-ic{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin-left:7px;border-radius:6px;border:1px solid var(--s2);background:#fff;color:var(--s5);cursor:pointer;vertical-align:middle;transition:all .12s;flex:none}
+.copy-ic:hover{background:var(--g0);color:var(--g7);border-color:var(--g1)}
+.copy-ic:active{transform:scale(.9)}
+.copy-ic svg{width:12px;height:12px}
 .cart-btn-zone{text-align:right;margin-top:10px}
 
 /* ===== COLLAPSIBLE SIDEBAR ===== */
@@ -408,7 +421,9 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
     <!-- SEARCH -->
     <div class="page" id="page-search">
       <div class="card">
-        <div class="card-header"><h3>ค้นหารหัสสินค้า / จัดการสถานะ</h3></div>
+        <div class="card-header"><h3>ค้นหารหัสสินค้า / จัดการสถานะ</h3>
+          <button class="btn btn-success btn-sm" onclick="exportSearchExcel()">⬇ Export Excel (ตามที่กรอง)</button>
+        </div>
         <div class="card-body">
           <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
             <input id="search-input" placeholder="พิมพ์ชื่อ, รหัสพัสดุ, รหัสเดิม, Barcode..." style="flex:1;min-width:200px" onkeyup="if(event.key==='Enter')doSearch()">
@@ -430,6 +445,7 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
               <option value="true">🔴 In-Active</option>
             </select>
             <button class="btn btn-primary" onclick="doSearch()">ค้นหา</button>
+            <button class="btn btn-outline" onclick="clearSearch()">✕ ล้าง</button>
           </div>
           <p style="font-size:11px;color:var(--s4);margin-bottom:12px">💡 คลิกที่แถวเพื่อดูรายละเอียดและแก้ไข &nbsp;|&nbsp; แถวสีแดง = In-Active</p>
           <div style="border:1px solid var(--s2);border-radius:var(--radl);overflow:hidden">
@@ -489,6 +505,21 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
 
     <!-- MASTER DATA -->
     <div class="page" id="page-master">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body" style="padding:16px 18px">
+          <div style="font-size:12px;color:var(--s5);margin-bottom:11px;font-weight:600">เลือกหมวดที่ต้องการจัดการ — ระบบจะแสดงเฉพาะหมวดนั้น (เพิ่ม / แก้ไข / ลบ)</div>
+          <div id="master-cat-nav" style="display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="mcat-btn active" data-cat="price" onclick="showMasterCat('price')">⚙️ เกณฑ์ราคา</button>
+            <button type="button" class="mcat-btn" data-cat="mstype" onclick="showMasterCat('mstype')">🏷️ กลุ่ม MSType</button>
+            <button type="button" class="mcat-btn" data-cat="itemgroup" onclick="showMasterCat('itemgroup')">📚 กลุ่มบัญชี</button>
+            <button type="button" class="mcat-btn" data-cat="uom" onclick="showMasterCat('uom')">📏 หน่วยนับ (UoM)</button>
+            <button type="button" class="mcat-btn" data-cat="uomgroup" onclick="showMasterCat('uomgroup')">🧩 UoM Group</button>
+            <button type="button" class="mcat-btn" data-cat="warehouse" onclick="showMasterCat('warehouse')">🏬 คลังสินค้า</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="master-section active" data-cat="price">
       <div class="card" style="margin-bottom:18px">
         <div class="card-header">
           <h3>⚙️ เกณฑ์การคำนวณราคา (Price Rules)</h3>
@@ -530,21 +561,30 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
           </div>
         </div>
       </div>
+      </div>
 
-      <div class="g2">
-        <div class="card"><div class="card-header"><h3>กลุ่ม MSType</h3><button class="btn btn-primary btn-sm" onclick="showAddMaster('mstype')">+ เพิ่ม</button></div>
+      <div class="master-section" data-cat="mstype">
+        <div class="card"><div class="card-header"><h3>🏷️ กลุ่ม MSType</h3><button class="btn btn-primary btn-sm" onclick="showAddMaster('mstype')">+ เพิ่ม</button></div>
           <table class="dt"><thead><tr><th>รหัส</th><th>ชื่อกลุ่ม</th><th>Running</th><th>ดูพัสดุ</th><th>ลบ</th></tr></thead><tbody id="mt-mstype"></tbody></table>
         </div>
-        <div class="card"><div class="card-header"><h3>กลุ่มบัญชี</h3><button class="btn btn-primary btn-sm" onclick="showAddMaster('itemgroup')">+ เพิ่ม</button></div>
+      </div>
+      <div class="master-section" data-cat="itemgroup">
+        <div class="card"><div class="card-header"><h3>📚 กลุ่มบัญชี</h3><button class="btn btn-primary btn-sm" onclick="showAddMaster('itemgroup')">+ เพิ่ม</button></div>
           <table class="dt"><thead><tr><th>รหัส</th><th>ชื่อบัญชี</th><th>ดูพัสดุ</th><th>ลบ</th></tr></thead><tbody id="mt-itemgroup"></tbody></table>
         </div>
-        <div class="card"><div class="card-header"><h3>หน่วยนับ (UoM)</h3><button class="btn btn-primary btn-sm" onclick="showAddMaster('uom')">+ เพิ่ม</button></div>
+      </div>
+      <div class="master-section" data-cat="uom">
+        <div class="card"><div class="card-header"><h3>📏 หน่วยนับ (UoM)</h3><button class="btn btn-primary btn-sm" onclick="showAddMaster('uom')">+ เพิ่ม</button></div>
           <table class="dt"><thead><tr><th>Entry</th><th>รหัสหน่วย</th><th>ลบ</th></tr></thead><tbody id="mt-uom"></tbody></table>
         </div>
-        <div class="card"><div class="card-header"><h3>UoM Group</h3><button class="btn btn-primary btn-sm" onclick="showAddMaster('uomgroup')">+ เพิ่ม</button></div>
+      </div>
+      <div class="master-section" data-cat="uomgroup">
+        <div class="card"><div class="card-header"><h3>🧩 UoM Group</h3><button class="btn btn-primary btn-sm" onclick="showAddMaster('uomgroup')">+ เพิ่ม</button></div>
           <table class="dt"><thead><tr><th>Entry</th><th>รหัสกลุ่ม</th><th>ลบ</th></tr></thead><tbody id="mt-uomgroup"></tbody></table>
         </div>
-        <div class="card"><div class="card-header"><h3>คลังสินค้า (Warehouse)</h3><button class="btn btn-primary btn-sm" onclick="showAddMaster('warehouse')">+ เพิ่ม</button></div>
+      </div>
+      <div class="master-section" data-cat="warehouse">
+        <div class="card"><div class="card-header"><h3>🏬 คลังสินค้า (Warehouse)</h3><button class="btn btn-primary btn-sm" onclick="showAddMaster('warehouse')">+ เพิ่ม</button></div>
           <table class="dt"><thead><tr><th>รหัสคลัง</th><th>ชื่อคลัง</th><th>ลบ</th></tr></thead><tbody id="mt-warehouse"></tbody></table>
         </div>
       </div>
@@ -1188,6 +1228,102 @@ function renderSearch(p){
   renderPager(data.length,p,lim,'#search-pager','renderSearch');
 }
 
+// [#1] ล้างตัวกรองและผลการค้นหาในหน้าค้นหา
+function clearSearch(){
+  $('#search-input').val('');
+  $('#filter-status').val('');
+  $('#filter-inactive').val('');
+  $('#filter-mstype').val('').trigger('change');
+  $('#filter-group').val('').trigger('change');
+  PS.search.data=[];
+  $('#search-tbody').html('<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--s4)">พิมพ์คำค้นหาหรือเลือกตัวกรอง แล้วกดปุ่มค้นหา</td></tr>');
+  $('#search-pager').html('');
+}
+
+// [#3] คัดลอกข้อความไปยังคลิปบอร์ด พร้อม toast
+function copyText(text, label){
+  const done=()=>Swal.fire({toast:true,position:'top-end',icon:'success',title:`คัดลอก${label?label:''}แล้ว`,showConfirmButton:false,timer:1400});
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
+  }else fallbackCopy(text,done);
+}
+function fallbackCopy(text,cb){
+  const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.focus();ta.select();
+  try{document.execCommand('copy');cb&&cb();}catch(e){}
+  document.body.removeChild(ta);
+}
+
+// [#4] Duplicate — คัดลอกข้อมูลไอเทมกลับไปที่หน้าออกรหัส เพื่อสร้างรหัสใหม่ในกลุ่มเดิม (แก้ไขได้อิสระ)
+function duplicateItem(idx){
+  const it=PS.search.data[idx];
+  if(!it)return;
+  Swal.close();
+  switchPage('page-create');
+  closeMobileSidebar();
+  try{ document.getElementById('itemForm').reset(); }catch(e){}
+  const ms = it.u_ntt_ms_type || it.u_ntt_asset_pur || '';
+  $('#f-msType').val(ms).trigger('change');
+  $('#f-itemGroup').val(String(it.items_group_code||'')).trigger('change');
+  $('#f-itemName').val(it.item_name||'');
+  $('#f-engName').val(it.english_name||'');
+  $('#f-oldCode').val(it.u_ntt_old_code||'');
+  $('#f-refNo').val(it.u_ntt_ref_no||'');
+  $('#f-barcode').val(it.u_ntt_barcode||'');
+  $('#f-tradeName').val(it.u_ntt_trade_name||'');
+  $('#f-interface').val(it.u_ntt_interface||'N');
+  if(it.u_ntt_cgd_code) $('#f-cgdCode').val(it.u_ntt_cgd_code).trigger('change');
+  if(it.inventory_uom_entry) $('#f-invUom').val(String(it.inventory_uom_entry)).trigger('change');
+  if(it.default_warehouse) $('#f-dfltWh').val(it.default_warehouse).trigger('change');
+  if(it.purchase_vat_group) $('#f-vatGroup').val(it.purchase_vat_group);
+  if(it.sys_cost!=null) $('#f-cost').val(it.sys_cost);
+  calcPrice();
+  window.scrollTo(0,0);
+  Swal.fire({icon:'info',title:'คัดลอกข้อมูลมาแล้ว',html:'<div style="font-size:13px;line-height:1.6;text-align:left">ข้อมูลถูกคัดลอกมาที่หน้า <b>ออกรหัสพัสดุ</b> แล้ว<br>ตรวจสอบ/แก้ไขข้อมูลตามต้องการ แล้วกด <b>“+ เพิ่มลงตะกร้า”</b> เพื่อออกรหัสใหม่ในกลุ่มเดิม<br><span style="color:var(--s5);font-size:12px">* กรุณาเลือก UoM Group / หน่วยซื้อ / หน่วยขาย อีกครั้ง</span></div>',confirmButtonText:'เข้าใจแล้ว',confirmButtonColor:'#256e4e'});
+}
+
+// [#5] Export ผลการค้นหา (ตามที่กรองไว้) เป็น Excel
+function exportSearchExcel(){
+  const data = (PS.search.data)||[];
+  if(!data.length) return Swal.fire('ไม่มีข้อมูล','กรุณาค้นหาข้อมูลก่อน แล้วจึง Export','info');
+  const rows = data.map((r,i)=>({
+    'ลำดับ':i+1,
+    'รหัสสินค้า':r.item_code||'',
+    'MSType':getMsName(r.u_ntt_ms_type||r.u_ntt_asset_pur),
+    'กลุ่มบัญชี':getGroupName(r.items_group_code),
+    'ชื่อพัสดุ (ไทย)':r.item_name||'',
+    'ชื่อพัสดุ (EN)':r.english_name||'',
+    'รหัสเดิม':r.u_ntt_old_code||'',
+    'Ref.No':r.u_ntt_ref_no||'',
+    'Barcode':r.u_ntt_barcode||'',
+    'ชื่อการค้า':r.u_ntt_trade_name||'',
+    'หน่วยคลัง':r.inventory_uom||r.sys_uom_name||'',
+    'คลัง Default':r.default_warehouse||'',
+    'VAT Group':r.purchase_vat_group||'',
+    'ราคาทุน':r.sys_cost!=null?Number(r.sys_cost):'',
+    'ราคาขาย':r.sys_price!=null?Number(r.sys_price):'',
+    'สถานะ':r.status==='approved'?'อนุมัติแล้ว':'รออนุมัติ',
+    'สภาพ':r.is_inactive?'In-Active':'Active',
+    'SAP':r.sync_sap?'ซิงค์แล้ว':'',
+    'HIS':r.sync_his?'ซิงค์แล้ว':'',
+    'ผู้ขอออกรหัส':r.creator_name||'',
+    'เลขที่ใบงาน':r.doc_num||'',
+    'วันที่สร้าง':r.created_at?new Date(r.created_at).toLocaleString('th-TH'):''
+  }));
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=Object.keys(rows[0]).map(k=>({wch:k.length>10?18:14}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'ผลการค้นหา');
+  XLSX.writeFile(wb,`ผลการค้นหาสินค้า_${new Date().toISOString().slice(0,10)}.xlsx`);
+  Swal.fire({toast:true,position:'top-end',icon:'success',title:`Export ${rows.length} รายการสำเร็จ`,showConfirmButton:false,timer:2000});
+}
+
+// [#6] สลับการแสดงหมวดข้อมูลหลัก
+function showMasterCat(cat){
+  document.querySelectorAll('#page-master .master-section').forEach(s=>s.classList.toggle('active', s.dataset.cat===cat));
+  document.querySelectorAll('#master-cat-nav .mcat-btn').forEach(b=>b.classList.toggle('active', b.dataset.cat===cat));
+}
+
 function openItemDetail(idx){
   const it=PS.search.data[idx];
   const isAdmin=CU.role==='admin';
@@ -1210,8 +1346,8 @@ function openItemDetail(idx){
   <div id="view-mode" style="text-align:left;font-size:13px">
     ${inactiveBanner}
     <div style="background:${isInactive?'var(--r0)':'var(--g0)'};border:1px solid ${isInactive?'var(--r1)':'var(--g1)'};border-radius:var(--rad);padding:12px 14px;margin-bottom:14px">
-      <div style="font-size:20px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:${isInactive?'var(--r6)':'var(--g7)'}">${it.item_code}</div>
-      <div style="font-size:14px;font-weight:600;margin-top:3px">${it.item_name}</div>
+      <div style="font-size:20px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:${isInactive?'var(--r6)':'var(--g7)'};display:flex;align-items:center">${it.item_code}<span class="copy-ic" title="คัดลอกรหัส" onclick="copyText('${it.item_code}','รหัส')"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></span></div>
+      <div style="font-size:14px;font-weight:600;margin-top:3px;display:flex;align-items:flex-start"><span>${it.item_name}</span><span class="copy-ic" title="คัดลอกชื่อรายการ" onclick="copyText(${JSON.stringify(it.item_name||'')},'ชื่อรายการ')"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></span></div>
       ${it.english_name?`<div style="color:var(--s5);font-size:12px;margin-top:1px">${it.english_name}</div>`:''}
       <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
         <span class="badge ${it.status==='approved'?'bg':'ba'}" style="font-size:12px">${it.status==='approved'?'✅ อนุมัติแล้ว':'⏳ รออนุมัติ'}</span>
@@ -1243,8 +1379,9 @@ function openItemDetail(idx){
       </table>
     </div>
 
-    <div style="display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--s1)">
-      ${isAdmin?`<button class="btn btn-warning" style="flex:1;background:var(--a0);color:var(--a6);border:1px solid var(--a1)" onclick="$('#view-mode').hide();$('#edit-mode').show();">✏️ แก้ไขข้อมูลทั้งหมด</button>`:''}
+    <div style="display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--s1);flex-wrap:wrap">
+      ${isAdmin?`<button class="btn btn-warning" style="flex:1;min-width:150px;background:var(--a0);color:var(--a6);border:1px solid var(--a1)" onclick="$('#view-mode').hide();$('#edit-mode').show();">✏️ แก้ไขข้อมูลทั้งหมด</button>`:''}
+      <button class="btn btn-secondary" style="background:var(--b0);color:var(--b6);border:1px solid var(--b1)" onclick="duplicateItem(${idx})">⧉ Duplicate (ออกรหัสใหม่จากตัวนี้)</button>
       <button class="btn btn-secondary" onclick="printJobSingle('${it.doc_num||''}','${sCode}')">🖨️ พิมพ์เอกสาร</button>
       ${isAdmin?`<button class="btn btn-danger" onclick="deleteItem('${sCode}')">🗑️ ลบพัสดุ</button>`:''}
     </div>
@@ -1843,7 +1980,7 @@ $('.nav-item').click(function(){
   closeMobileSidebar();
   if(p==='page-history')loadHistory();
   if(p==='page-users')loadUsers();
-  if(p==='page-master')renderPriceRulesTable();
+  if(p==='page-master'){renderPriceRulesTable(); showMasterCat(document.querySelector('#master-cat-nav .mcat-btn.active')?.dataset.cat || 'price');}
   if(p==='page-export')setExportMode(EXP_MODE||'date');
   if(p==='page-cgd')loadCGDPage();
 });
