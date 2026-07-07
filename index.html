@@ -200,7 +200,9 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
     padding-right:calc(12px + env(safe-area-inset-right,0px));}
   .topbar-left,.topbar-right{min-height:52px}
   /* ดัน sidebar ด้านบนลงมาให้พ้นสถานะมือถือด้วย */
-  .sidebar{padding-top:env(safe-area-inset-top,0px)}
+  .sidebar{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  /* หน้า Login ก็เว้น safe-area */
+  #auth-screen{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
   /* Sidebar becomes an off-canvas drawer */
   .sidebar{width:270px!important;transform:translateX(-100%);box-shadow:0 0 44px rgba(0,0,0,.45);z-index:100}
   body.mb-open .sidebar{transform:translateX(0)}
@@ -234,6 +236,17 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
   /* SweetAlert fits the screen */
   .swal2-popup{width:94vw!important;max-width:94vw!important}
   .select2-container{max-width:100%}
+  /* [safe-area] ป็อบอัป (SweetAlert) เว้นระยะ notch/status bar + home indicator ทุกหน้าต่าง */
+  .swal2-container{
+    padding-top:calc(12px + env(safe-area-inset-top,0px))!important;
+    padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;
+    padding-left:calc(8px + env(safe-area-inset-left,0px))!important;
+    padding-right:calc(8px + env(safe-area-inset-right,0px))!important;
+  }
+  /* ป็อบอัปสูงเกินจอ ให้เลื่อนภายในได้ ไม่ล้นออกนอกพื้นที่ปลอดภัย */
+  .swal2-popup{max-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 24px)!important;overflow-y:auto!important}
+  /* toast มุมบน ให้หลบ status bar/notch */
+  .swal2-container.swal2-top-end,.swal2-container.swal2-top,.swal2-container.swal2-top-start{padding-top:calc(12px + env(safe-area-inset-top,0px))!important}
   /* เว้นที่ให้ content ไม่โดน bottom-nav บัง */
   .page{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))!important}
 
