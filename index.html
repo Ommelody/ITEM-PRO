@@ -376,7 +376,8 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
               </div>
             </div>
 
-            <div class="cart-btn-zone">
+            <div class="cart-btn-zone" style="display:flex;gap:8px;justify-content:flex-end">
+              <button type="button" class="btn btn-outline" onclick="clearCreateForm()">✕ ล้างข้อมูล</button>
               <button type="submit" class="btn btn-success">+ เพิ่มลงตะกร้า</button>
             </div>
           </form>
@@ -1226,6 +1227,21 @@ function renderSearch(p){
       <td>${r.sync_his?'<span class="badge bg">✅</span>':'<span class="badge bs">–</span>'}</td>
     </tr>`).join(''));
   renderPager(data.length,p,lim,'#search-pager','renderSearch');
+}
+
+// ล้างฟอร์มหน้าออกรหัสพัสดุ (ไม่แตะตะกร้า)
+function clearCreateForm(){
+  try{ document.getElementById('itemForm').reset(); }catch(e){}
+  $('#f-msType,#f-itemGroup,#f-uomGroup,#f-purUom,#f-salUom,#f-invUom,#f-dfltWh,#f-cgdCode').val('').trigger('change');
+  $('#f-itemName,#f-engName,#f-oldCode,#f-refNo,#f-barcode,#f-tradeName,#f-vatGroup').val('');
+  $('#f-interface').val('N');
+  $('#f-issueMethod').val('B');
+  $('#f-priceType').val('consignment');
+  $('#f-cost').val('1000');
+  $('#no-price-zone').hide();
+  $('#price-calc-box').show();
+  calcPrice();
+  Swal.fire({toast:true,position:'top-end',icon:'info',title:'ล้างข้อมูลฟอร์มแล้ว',showConfirmButton:false,timer:1300});
 }
 
 // [#1] ล้างตัวกรองและผลการค้นหาในหน้าค้นหา
