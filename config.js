@@ -6,6 +6,10 @@
 const SUPABASE_URL  = "https://szoxfjzkdwurxlvevkjs.supabase.co";   // <-- แก้ตรงนี้
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6b3hmanprZHd1cnhsdmV2a2pzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NTI1NjIsImV4cCI6MjA5NDIyODU2Mn0.qxR9oWXKAiMkk9dWJMIHU1K6hBWtS51T_FL5TqDeLyQ";                   // <-- แก้ตรงนี้
 
+// [PR ORDER Integration] วาง Apps Script Web App URL ของระบบ PR ORDER ตรงนี้ (ลงท้าย /exec)
+// ใช้สำหรับ "push" แจ้งกลับแบบ real-time ทันทีที่ออกรหัสเสร็จ (ทางเลือกเสริม — เว้นว่างได้ ระบบยังทำงานผ่านตาราง pr_code_requests ตามปกติ)
+const PR_ORDER_WEBAPP_URL = ""; // เช่น "https://script.google.com/macros/s/XXXX/exec"
+
 // ---- internal: do not edit below ----
 const _headers = () => ({
   "Content-Type": "application/json",

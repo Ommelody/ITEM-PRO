@@ -325,7 +325,7 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
       <p>ศูนย์การแพทย์ธรรมศาสตร์</p>
     </div>
     <div class="sec-label">เมนูหลัก</div>
-    <div class="nav-item active" data-page="page-create"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg><span>ออกรหัสพัสดุ</span></div>
+    <div class="nav-item active" data-page="page-create"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg><span>ออกรหัสพัสดุ</span><span id="nav-pr-badge" style="display:none;margin-left:auto;background:#dc2626;color:#fff;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:10px">0</span></div>
     <div class="nav-item" data-page="page-history"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><span>ประวัติใบงาน</span></div>
     <div class="nav-item" data-page="page-search"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 111 11a6 6 0 0116 0z"/></svg><span>ค้นหา / จัดการสถานะ</span></div>
     <div class="nav-item" data-page="page-export"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg><span>Export CSV / DTW</span></div>
@@ -366,6 +366,17 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
 
     <!-- CREATE -->
     <div class="page active" id="page-create">
+      <!-- [PR ORDER] แจ้งเตือนคำขอออกรหัสที่ส่งมาจากระบบ PR ORDER -->
+      <div id="pr-alert-box" style="display:none;background:#fef2f2;border:1.5px solid #fecaca;border-radius:12px;padding:14px 18px;margin-bottom:16px;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="width:38px;height:38px;border-radius:50%;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex:none">🔔</span>
+          <div>
+            <div style="font-weight:700;color:#991b1b;font-size:14.5px">มีคำขอออกรหัสจาก PR ORDER รอดำเนินการ <span id="pr-alert-count">0</span> รายการ</div>
+            <div style="font-size:12.5px;color:#b91c1c">รับเฉพาะชื่อรายการมา — กรุณาตรวจสอบและกรอกข้อมูลให้ครบก่อนออกรหัส</div>
+          </div>
+        </div>
+        <button type="button" class="btn" style="background:#dc2626;color:#fff;border:1px solid #dc2626;flex:none" onclick="openPRRequestsList()">🔴 ออกรหัสจาก PR ORDER</button>
+      </div>
       <div class="card">
         <div class="card-header"><h3>เพิ่มรายการสินค้าในใบงาน</h3></div>
         <div class="card-body">
@@ -784,6 +795,72 @@ async function dbCount(table, filter){
   return parseInt((cr.split('/')[1] || '').trim()) || 0;
 }
 
+// ===================== PR ORDER INTEGRATION =====================
+// [PR ORDER] คำขอออกรหัสจากระบบ PR ORDER มาผ่านตาราง Supabase "pr_code_requests"
+// สคีมา: id, pr_ref, item_name, requested_by, status('pending'|'issued'|'cancelled'),
+//        item_code, uom, doc_num, issued_at, created_at   (ดู PR_ORDER_INTEGRATION.md)
+PS.prPending = [];
+PS.prActive = null; // { id, pr_ref } ของคำขอที่กำลังจะออกรหัสอยู่ตอนนี้
+
+async function checkPRRequests(){
+  try{
+    const rows = await DB.get('pr_code_requests','status=eq.pending&order=created_at.asc&limit=200');
+    PS.prPending = rows||[];
+    const n = PS.prPending.length;
+    $('#nav-pr-badge').toggle(n>0).text(n);
+    $('#pr-alert-box').css('display', n>0 ? 'flex' : 'none');
+    $('#pr-alert-count').text(n);
+  }catch(e){ /* ตารางอาจยังไม่ถูกสร้าง — เงียบไว้ ไม่รบกวนการทำงานหลัก */ }
+}
+
+function openPRRequestsList(){
+  if(!PS.prPending.length) return checkPRRequests();
+  const html = `<div style="text-align:left;max-height:60vh;overflow:auto">` + PS.prPending.map(r=>`
+    <div style="border:1px solid var(--s2);border-radius:10px;padding:11px 13px;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <div style="min-width:0">
+        <div style="font-weight:700;font-size:13.5px">${escHtml(r.item_name)}</div>
+        <div style="font-size:11.5px;color:var(--s5);margin-top:2px">เลขที่ PR: ${escHtml(r.pr_ref||'–')} · ผู้ขอ: ${escHtml(r.requested_by||'–')} · ${r.created_at?new Date(r.created_at).toLocaleDateString('th-TH'):''}</div>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" style="flex:none" onclick="pickPRRequest(${r.id})">เลือกออกรหัส</button>
+    </div>`).join('') + `</div>`;
+  Swal.fire({title:`🔴 คำขอออกรหัสจาก PR ORDER (${PS.prPending.length})`,html,width:560,showConfirmButton:false,showCloseButton:true});
+}
+
+function pickPRRequest(id){
+  const r = PS.prPending.find(x=>x.id===id);
+  if(!r) return;
+  Swal.close();
+  PS.prActive = {id:r.id, pr_ref:r.pr_ref};
+  switchPage('page-create');
+  closeMobileSidebar();
+  $('#f-itemName').val(r.item_name||'');
+  window.scrollTo(0,0);
+  Swal.fire({toast:true,position:'top-end',icon:'info',title:'นำชื่อรายการจาก PR ORDER มาใส่แล้ว — กรอกข้อมูลที่เหลือให้ครบ',showConfirmButton:false,timer:2600});
+}
+
+// เรียกเมื่อออกรหัส "อนุมัติ" สำเร็จ เพื่อส่งรหัส/ชื่อ/หน่วยนับกลับไปที่ PR ORDER
+async function sendCodeBackToPR(item){
+  if(!item || !item.pr_request_id) return;
+  const uom = item.inventory_uom || item.sys_uom_name || '';
+  try{
+    await DB.patch('pr_code_requests', `id=eq.${item.pr_request_id}`, {
+      status:'issued', item_code:item.item_code, item_name:item.item_name, uom,
+      doc_num:item.doc_num||null, issued_at:new Date().toISOString()
+    });
+  }catch(e){ console.warn('sendCodeBackToPR (table) failed', e); }
+  // push แบบ real-time ไปยัง Apps Script ของ PR ORDER (ถ้าตั้งค่า URL ไว้) — best-effort เท่านั้น
+  if(typeof PR_ORDER_WEBAPP_URL === 'string' && PR_ORDER_WEBAPP_URL){
+    try{
+      await fetch(PR_ORDER_WEBAPP_URL, {
+        method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'receiveItemCode', itemName:item.item_name, itemCode:item.item_code, uom, prRef:item.pr_ref||null})
+      });
+    }catch(e){ console.warn('sendCodeBackToPR (webapp push) failed', e); }
+  }
+  $('#nav-pr-badge').text(Math.max(0,(PS.prPending.length||1)-1));
+  checkPRRequests();
+}
+
 // ===================== MOBILE APP / PWA =====================
 function toggleMobileSidebar(){ document.body.classList.toggle('mb-open'); }
 function closeMobileSidebar(){ document.body.classList.remove('mb-open'); }
@@ -855,6 +932,8 @@ async function initApp(){
   setExportMode('date');
   updateAvatarUI();
   loadCGDForDropdown();
+  checkPRRequests();
+  setInterval(checkPRRequests, 45000); // [PR ORDER] เช็คคำขอใหม่ทุก 45 วินาที
 }
 
 async function loadCGDForDropdown(){
@@ -1128,6 +1207,9 @@ $('#itemForm').on('submit',function(e){
   const cost = noPrice ? 0 : parseFloat($('#f-cost').val());
   const pr = noPrice ? {gov:0,mu:0,sell:0,finalSell:0,note:'ไม่คำนวณราคา'} : calcPriceLogic(cost,$('#f-priceType').val());
   cart.push({
+    // [PR ORDER] ผูกรายการนี้กับคำขอที่เลือกไว้ (ถ้ามี) เพื่อส่งรหัสกลับหลังอนุมัติ
+    prRequestId: PS.prActive ? PS.prActive.id : null,
+    prRef: PS.prActive ? PS.prActive.pr_ref : null,
     msType,msTypeName:$('#f-msType option:selected').text().replace(/^\[.*?\]\s*/,''),
     itemGroup:$('#f-itemGroup').val(),itemGroupText:$('#f-itemGroup option:selected').text().replace(/^\[.*?\]\s*/,''),
     itemName:$('#f-itemName').val(),engName:$('#f-engName').val(),
@@ -1146,6 +1228,7 @@ $('#itemForm').on('submit',function(e){
     noPrice
   });
   renderCart();
+  PS.prActive = null; // เคลียร์การผูก PR request หลังเพิ่มลงตะกร้าแล้ว (ป้องกันผูกซ้ำกับรายการถัดไป)
   $('#f-itemName,#f-engName,#f-oldCode,#f-refNo,#f-barcode,#f-tradeName').val('');
   $('#f-cgdCode').val('').trigger('change');
   Swal.fire({toast:true,position:'top-end',icon:'success',title:'เพิ่มลงตะกร้าแล้ว',showConfirmButton:false,timer:1500});
@@ -1196,6 +1279,7 @@ $('#btn-process').on('click',async function(){
       generated.push(code);
       inserts.push({
         doc_num:docNum,item_code:code,
+        pr_request_id:c.prRequestId||null, // [PR ORDER] ผูกกับคำขอต้นทาง (ถ้ามี)
         u_ntt_old_code:c.oldCode||null,
         u_ntt_ref_no:c.refNo||null,
         u_ntt_barcode:c.barcode||null,
@@ -1542,6 +1626,10 @@ async function saveItemEditFull(code) {
      if(updated.length){
         const idx = PS.search.data.findIndex(r=>r.item_code===code);
         if(idx>=0) PS.search.data[idx] = updated[0];
+        // [PR ORDER] เมื่อกดอนุมัติ (status=approved) และรายการนี้มาจาก PR ORDER ให้ส่งรหัส/ชื่อ/หน่วยนับกลับไปอัตโนมัติ
+        if(p.status==='approved' && updated[0].pr_request_id){
+          sendCodeBackToPR(updated[0]);
+        }
      }
      Swal.fire({toast:true,position:'top-end',icon:'success',title:'อัปเดตเรียบร้อย',showConfirmButton:false,timer:2000});
      renderSearch(PS.search.cur);
