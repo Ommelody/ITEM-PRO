@@ -1321,7 +1321,7 @@ $('#btn-process').on('click',async function(){
         u_ntt_ref_no:c.refNo||null,
         u_ntt_barcode:c.barcode||null,
         u_ntt_cgd_code:c.cgdCode||null,  // [1]
-        u_ntt_remark: c.prRequestId ? 'รายการออกรหัสจาก PR ORDER' : null, // [1] หมายเหตุที่มาของรายการ
+        u_ntt_remark: c.prRequestId ? `รายการออกรหัสจาก PR ORDER${c.prRef ? ` (เลขที่ ${c.prRef})` : ''}` : null, // [1] หมายเหตุที่มาของรายการ + เลขที่ PR/BR
         item_name:c.itemName,foreign_name:c.engName||c.itemName,
         english_name:c.engName||null,u_ntt_trade_name:c.tradeName||null,
         item_type:'I',items_group_code:c.itemGroup,items_group_text:c.itemGroupText,
