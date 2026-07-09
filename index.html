@@ -1630,14 +1630,18 @@ function openItemDetail(idx){
       </div>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-success" style="flex:1" onclick="saveItemEditFull('${sCode}')">💾 บันทึกการแก้ไขทั้งหมด</button>
+      <button class="btn btn-success" id="btn-save-item-edit" style="flex:1" onclick="saveItemEditFull('${sCode}', this)">💾 บันทึกการแก้ไขทั้งหมด</button>
       <button class="btn btn-outline" onclick="$('#edit-mode').hide();$('#view-mode').show();">ยกเลิก</button>
     </div>
   </div>`;
   Swal.fire({title:'',html,showConfirmButton:false,showCloseButton:true,width:'850px'});
 }
 
-async function saveItemEditFull(code) {
+async function saveItemEditFull(code, btnEl) {
+  // กันกดซ้ำ / กดค้าง — ปิดปุ่มระหว่างบันทึกอยู่
+  if(window.__savingItemEdit) return;
+  window.__savingItemEdit = true;
+  if(btnEl){ btnEl.disabled = true; btnEl.textContent = '⏳ กำลังบันทึก...'; }
   try {
      const uomEntry = $('#e-uom').val();
      const uomRec = uomEntry ? MD.uoms.find(u=>String(u.uom_abs_entry)===uomEntry) : null;
@@ -1672,7 +1676,7 @@ async function saveItemEditFull(code) {
         is_inactive: $('#e-inactive').is(':checked')  // [4]
      };
 
-     Swal.fire({title:'กำลังบันทึก...',didOpen:()=>Swal.showLoading()});
+     Swal.fire({title:'กำลังบันทึก...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
      await DB.patch('items', `item_code=eq.${code}`, p);
      const updated = await DB.get('items', `item_code=eq.${code}`);
      if(updated.length){
@@ -1683,10 +1687,15 @@ async function saveItemEditFull(code) {
           sendCodeBackToPR(updated[0]);
         }
      }
-     Swal.fire({toast:true,position:'top-end',icon:'success',title:'อัปเดตเรียบร้อย',showConfirmButton:false,timer:2000});
+     Swal.close(); // ปิดป็อบอัพฟอร์มแก้ไขทันทีที่บันทึกสำเร็จ ก่อนแสดง toast ยืนยัน
      renderSearch(PS.search.cur);
+     Swal.fire({toast:true,position:'top-end',icon:'success',title:'อัปเดตเรียบร้อย — บันทึกข้อมูลลงฐานข้อมูลแล้ว',showConfirmButton:false,timer:2200});
   } catch(e) {
-     Swal.fire('Error', e.message, 'error');
+     console.error('saveItemEditFull failed:', e);
+     Swal.fire('บันทึกไม่สำเร็จ', e.message || 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ กรุณาลองใหม่อีกครั้ง', 'error');
+     if(btnEl){ btnEl.disabled = false; btnEl.textContent = '💾 บันทึกการแก้ไขทั้งหมด'; }
+  } finally {
+     window.__savingItemEdit = false;
   }
 }
 
