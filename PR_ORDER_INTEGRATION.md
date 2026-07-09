@@ -31,6 +31,7 @@ create table if not exists pr_code_requests (
 );
 
 alter table items add column if not exists pr_request_id bigint references pr_code_requests(id);
+alter table items add column if not exists u_ntt_remark text; -- [ใหม่] เก็บหมายเหตุ "รายการออกรหัสจาก PR ORDER"
 
 -- เปิดสิทธิ์ให้ anon key อ่าน/เขียนได้ (ถ้า RLS เปิดอยู่ ปรับ policy ตามนโยบายจริงของหน่วยงาน)
 alter table pr_code_requests enable row level security;

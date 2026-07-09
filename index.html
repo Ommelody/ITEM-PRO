@@ -408,20 +408,22 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
             <p class="sec-divider">3 — คำนวณราคา</p>
 
             <div id="no-price-zone" style="display:none;background:var(--a0);border:1px solid var(--a1);border-radius:var(--rad);padding:14px 18px;margin-bottom:10px">
-              <span style="font-size:13px;color:var(--a6);font-weight:600">⚠️ MSType นี้ (กลุ่ม 7x/8x) ไม่ต้องคำนวณราคา — ระบบจะบันทึกราคา 0 โดยอัตโนมัติ</span>
+              <span style="font-size:13px;color:var(--a6);font-weight:600">ℹ️ MSType นี้ (กลุ่ม 7x/8x) — กรอกเฉพาะ <u>ราคาทุน</u> ไม่คำนวณราคาขาย (ระบบบันทึกราคาขาย = 0)</span>
             </div>
 
             <div class="price-box" id="price-calc-box">
               <div class="g2" style="margin-bottom:10px">
                 <div class="fg"><label>ราคาทุน (Cost Price) <span class="req">*</span></label><input type="number" id="f-cost" value="1000" step="0.01" min="0" required></div>
-                <div class="fg"><label>เกณฑ์ราคา</label><select id="f-priceType"><option value="consignment">ฝากขาย (Consignment)</option><option value="general">ซื้อขาด (General)</option></select></div>
+                <div class="fg" id="pricetype-wrap"><label>เกณฑ์ราคา</label><select id="f-priceType"><option value="consignment">ฝากขาย (Consignment)</option><option value="general">ซื้อขาด (General)</option></select></div>
               </div>
-              <p id="p-note" style="font-size:11px;color:var(--s5);margin-bottom:12px">–</p>
-              <div class="price-stats" style="grid-template-columns:repeat(4,1fr)">
-                <div class="pstat"><div class="pl">ราคาเบิกได้</div><div class="pv" id="p-gov">–</div></div>
-                <div class="pstat"><div class="pl">% Mark Up</div><div class="pv" id="p-markup">–</div></div>
-                <div class="pstat sell"><div class="pl">ราคาขาย (ก่อน Top-up)</div><div class="pv" id="p-sell">–</div></div>
-                <div class="pstat" style="border:1px solid var(--b1);background:var(--b0)"><div class="pl" style="color:var(--b6)">ราคาขาย Final (+Top-up)</div><div class="pv" style="color:var(--b6)" id="p-finalsell">–</div></div>
+              <div id="sell-calc-zone">
+                <p id="p-note" style="font-size:11px;color:var(--s5);margin-bottom:12px">–</p>
+                <div class="price-stats" style="grid-template-columns:repeat(4,1fr)">
+                  <div class="pstat"><div class="pl">ราคาเบิกได้</div><div class="pv" id="p-gov">–</div></div>
+                  <div class="pstat"><div class="pl">% Mark Up</div><div class="pv" id="p-markup">–</div></div>
+                  <div class="pstat sell"><div class="pl">ราคาขาย (ก่อน Top-up)</div><div class="pv" id="p-sell">–</div></div>
+                  <div class="pstat" style="border:1px solid var(--b1);background:var(--b0)"><div class="pl" style="color:var(--b6)">ราคาขาย FINAL (+Top-up)</div><div class="pv" style="color:var(--b6)" id="p-finalsell">–</div></div>
+                </div>
               </div>
             </div>
 
@@ -437,6 +439,7 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
           <h3>ตะกร้ารายการ (<span id="cart-count">0</span> รายการ)</h3>
           <button class="btn btn-primary" id="btn-process">✔ ออกรหัสและบันทึก</button>
         </div>
+        <p style="font-size:11px;color:var(--s4);padding:8px 18px 0">💡 คลิกที่แถวเพื่อแก้ไขรายการนั้นก่อนเพิ่มลงตะกร้าอีกครั้ง</p>
         <table class="dt">
           <thead><tr><th>#</th><th>ชื่อสินค้า</th><th>MSType</th><th>หน่วยคลัง</th><th>Barcode</th><th>ราคาทุน</th><th>ราคาขาย</th><th>ลบ</th></tr></thead>
           <tbody id="cart-tbody"><tr><td colspan="8" style="text-align:center;padding:24px;color:var(--s4)">ยังไม่มีรายการ</td></tr></tbody>
@@ -964,7 +967,7 @@ async function loadMasterData(){
     
     MD={msTypes:ms,itemGroups:ig,uomGroups:ug,uoms:um,warehouses:wh};
     
-    $('.sel2').not('#filter-mstype, #filter-group, #f-dfltWh, #exp-job-select').find('option:not(:first)').remove();
+    $('.sel2').not('#filter-mstype, #filter-group, #f-dfltWh, #f-cgdCode, #exp-job-select').find('option:not(:first)').remove();
     $('#f-msType').empty().append(new Option('— ค้นหากลุ่ม —',''));
     $('#f-itemGroup').empty().append(new Option('— ค้นหาบัญชี —',''));
     $('#f-uomGroup').empty().append(new Option('— เลือก —',''));
@@ -1057,9 +1060,12 @@ $('#f-msType').on('change',function(){
   else $('#f-vatGroup').val('IEH07');
 
   const noPrice = v.startsWith('7')||v.startsWith('8');
+  // [2] กลุ่ม 7x/8x: ยังกรอกราคาทุนได้ แต่ไม่คำนวณ/ไม่แสดงราคาขาย
   $('#no-price-zone').toggle(noPrice);
-  $('#price-calc-box').toggle(!noPrice);
-  $('#f-cost').prop('required', !noPrice);
+  $('#price-calc-box').show();          // แสดงช่องราคาทุนเสมอ
+  $('#sell-calc-zone').toggle(!noPrice); // ซ่อนเฉพาะส่วนคำนวณราคาขาย
+  $('#pricetype-wrap').toggle(!noPrice); // เกณฑ์ราคาไม่จำเป็นสำหรับ 7x/8x
+  $('#f-cost').prop('required', true);
   if(!noPrice) calcPrice();
 });
 
@@ -1204,8 +1210,9 @@ $('#itemForm').on('submit',function(e){
   const inv=$('#f-invUom option:selected'),pur=$('#f-purUom option:selected'),sal=$('#f-salUom option:selected');
   const msType = $('#f-msType').val()||'';
   const noPrice = msType.startsWith('7')||msType.startsWith('8');
-  const cost = noPrice ? 0 : parseFloat($('#f-cost').val());
-  const pr = noPrice ? {gov:0,mu:0,sell:0,finalSell:0,note:'ไม่คำนวณราคา'} : calcPriceLogic(cost,$('#f-priceType').val());
+  // [2] 7x/8x: เก็บราคาทุนที่กรอกจริง แต่ไม่คำนวณราคาขาย (sell = 0)
+  const cost = parseFloat($('#f-cost').val())||0;
+  const pr = noPrice ? {gov:0,mu:0,sell:0,finalSell:0,note:'ไม่คำนวณราคาขาย'} : calcPriceLogic(cost,$('#f-priceType').val());
   cart.push({
     // [PR ORDER] ผูกรายการนี้กับคำขอที่เลือกไว้ (ถ้ามี) เพื่อส่งรหัสกลับหลังอนุมัติ
     prRequestId: PS.prActive ? PS.prActive.id : null,
@@ -1237,16 +1244,46 @@ $('#itemForm').on('submit',function(e){
 function renderCart(){
   $('#cart-count').text(cart.length);
   if(!cart.length){$('#cart-tbody').html('<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--s4)">ยังไม่มีรายการ</td></tr>');return;}
-  $('#cart-tbody').html(cart.map((c,i)=>`<tr>
+  $('#cart-tbody').html(cart.map((c,i)=>`<tr style="cursor:pointer" onclick="editCartItem(${i})" title="คลิกเพื่อแก้ไขรายการนี้ก่อนเพิ่มลงตะกร้าอีกครั้ง">
     <td class="mono" style="color:var(--s4)">${i+1}</td>
     <td>${c.itemName}</td>
     <td><span class="badge bg">${c.msType}</span></td>
     <td>${c.invUomText}</td>
     <td class="mono" style="font-size:11px;color:var(--s5)">${c.barcode||'–'}</td>
-    <td class="mono">${c.noPrice?'<span class="badge ba">ไม่คำนวณ</span>':Number(c.costPrice).toLocaleString('th-TH',{minimumFractionDigits:2})}</td>
-    <td class="mono" style="color:var(--r6);font-weight:600">${c.noPrice?'<span class="badge ba">–</span>':Number(c.sellPrice).toLocaleString('th-TH')}</td>
-    <td><button class="btn btn-danger btn-xs" onclick="cart.splice(${i},1);renderCart()">✕</button></td>
+    <td class="mono">${Number(c.costPrice).toLocaleString('th-TH',{minimumFractionDigits:2})}</td>
+    <td class="mono" style="color:var(--r6);font-weight:600">${c.noPrice?'<span class="badge ba">ไม่คำนวณ</span>':Number(c.sellPrice).toLocaleString('th-TH')}</td>
+    <td><button class="btn btn-danger btn-xs" onclick="event.stopPropagation();cart.splice(${i},1);renderCart()">✕</button></td>
   </tr>`).join(''));
+}
+
+// [#2] คลิกแถวในตะกร้าเพื่อดึงข้อมูลกลับมาแก้ไขที่ฟอร์มก่อนเพิ่มลงตะกร้าอีกครั้ง
+function editCartItem(idx){
+  const c = cart[idx];
+  if(!c) return;
+  cart.splice(idx,1); // เอาออกจากตะกร้าก่อน — จะถูกเพิ่มกลับเมื่อกด "+ เพิ่มลงตะกร้า" อีกครั้ง
+  renderCart();
+  $('#f-msType').val(c.msType||'').trigger('change');
+  $('#f-itemGroup').val(c.itemGroup||'').trigger('change');
+  $('#f-itemName').val(c.itemName||'');
+  $('#f-engName').val(c.engName||'');
+  $('#f-oldCode').val(c.oldCode||'');
+  $('#f-refNo').val(c.refNo||'');
+  $('#f-barcode').val(c.barcode||'');
+  $('#f-tradeName').val(c.tradeName||'');
+  $('#f-interface').val(c.interfaceStatus||'N');
+  $('#f-cgdCode').val(c.cgdCode||'').trigger('change');
+  $('#f-uomGroup').val(c.uomGroup||'').trigger('change');
+  $('#f-purUom').val(c.purUomId||'').trigger('change');
+  $('#f-salUom').val(c.salUomId||'').trigger('change');
+  $('#f-invUom').val(c.invUomId||'').trigger('change');
+  $('#f-issueMethod').val(c.issueMethod||'B');
+  $('#f-dfltWh').val(c.dfltWh||'').trigger('change');
+  $('#f-vatGroup').val(c.vatGroup||'');
+  $('#f-cost').val(c.costPrice||0);
+  PS.prActive = c.prRequestId ? {id:c.prRequestId, pr_ref:c.prRef} : null;
+  calcPrice();
+  window.scrollTo(0,0);
+  Swal.fire({toast:true,position:'top-end',icon:'info',title:'นำรายการมาที่ฟอร์มแล้ว — แก้ไขแล้วกด "+ เพิ่มลงตะกร้า" อีกครั้ง',showConfirmButton:false,timer:2600});
 }
 
 // ===================== SAVE JOB =====================
@@ -1284,6 +1321,7 @@ $('#btn-process').on('click',async function(){
         u_ntt_ref_no:c.refNo||null,
         u_ntt_barcode:c.barcode||null,
         u_ntt_cgd_code:c.cgdCode||null,  // [1]
+        u_ntt_remark: c.prRequestId ? 'รายการออกรหัสจาก PR ORDER' : null, // [1] หมายเหตุที่มาของรายการ
         item_name:c.itemName,foreign_name:c.engName||c.itemName,
         english_name:c.engName||null,u_ntt_trade_name:c.tradeName||null,
         item_type:'I',items_group_code:c.itemGroup,items_group_text:c.itemGroupText,
@@ -1371,7 +1409,10 @@ function renderSearch(p){
 }
 
 // ล้างฟอร์มหน้าออกรหัสพัสดุ (ไม่แตะตะกร้า)
-function clearCreateForm(){
+async function clearCreateForm(){
+  // [#3] เด้งถามยืนยันก่อน กันกดลั่น
+  const cf = await Swal.fire({title:'ล้างข้อมูลในฟอร์ม?',text:'ข้อมูลที่กรอกไว้ทั้งหมดจะหายไป (ไม่กระทบตะกร้า)',icon:'warning',showCancelButton:true,confirmButtonText:'ล้างข้อมูล',cancelButtonText:'ยกเลิก',confirmButtonColor:'#d97706',reverseButtons:true});
+  if(!cf.isConfirmed) return;
   try{ document.getElementById('itemForm').reset(); }catch(e){}
   $('#f-msType,#f-itemGroup,#f-uomGroup,#f-purUom,#f-salUom,#f-invUom,#f-dfltWh,#f-cgdCode').val('').trigger('change');
   $('#f-itemName,#f-engName,#f-oldCode,#f-refNo,#f-barcode,#f-tradeName,#f-vatGroup').val('');
@@ -1381,12 +1422,17 @@ function clearCreateForm(){
   $('#f-cost').val('1000');
   $('#no-price-zone').hide();
   $('#price-calc-box').show();
+  $('#sell-calc-zone').show();
+  $('#pricetype-wrap').show();
   calcPrice();
   Swal.fire({toast:true,position:'top-end',icon:'info',title:'ล้างข้อมูลฟอร์มแล้ว',showConfirmButton:false,timer:1300});
 }
 
 // [#1] ล้างตัวกรองและผลการค้นหาในหน้าค้นหา
-function clearSearch(){
+async function clearSearch(){
+  // [#3] เด้งถามยืนยันก่อน กันกดลั่น
+  const cf = await Swal.fire({title:'ล้างตัวกรองและผลการค้นหา?',icon:'warning',showCancelButton:true,confirmButtonText:'ล้าง',cancelButtonText:'ยกเลิก',confirmButtonColor:'#d97706',reverseButtons:true});
+  if(!cf.isConfirmed) return;
   $('#search-input').val('');
   $('#filter-status').val('');
   $('#filter-inactive').val('');
@@ -1498,10 +1544,16 @@ function openItemDetail(idx){
     <div><div style="font-size:13px;font-weight:700;color:var(--r6)">In-Active — ไม่มีการใช้งานแล้ว</div>
     <div style="font-size:11px;color:var(--r6);margin-top:1px">รายการนี้ถูกทำเครื่องหมายว่าหยุดใช้งาน</div></div>
   </div>` : '';
+  // [1] แสดงหมายเหตุว่ารายการนี้ออกรหัสมาจาก PR ORDER
+  const prBanner = it.u_ntt_remark ? `<div style="background:var(--b0);border:1px solid var(--b1);border-radius:var(--rad);padding:9px 14px;margin-bottom:12px;display:flex;align-items:center;gap:9px">
+    <span style="font-size:17px">📥</span>
+    <div style="font-size:12.5px;font-weight:600;color:var(--b6)">${escHtml(it.u_ntt_remark)}</div>
+  </div>` : '';
 
   const html=`
   <div id="view-mode" style="text-align:left;font-size:13px">
     ${inactiveBanner}
+    ${prBanner}
     <div style="background:${isInactive?'var(--r0)':'var(--g0)'};border:1px solid ${isInactive?'var(--r1)':'var(--g1)'};border-radius:var(--rad);padding:12px 14px;margin-bottom:14px">
       <div style="font-size:20px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:${isInactive?'var(--r6)':'var(--g7)'};display:flex;align-items:center">${it.item_code}<span class="copy-ic" title="คัดลอกรหัส" onclick="copyText('${it.item_code}','รหัส')"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></span></div>
       <div style="font-size:14px;font-weight:600;margin-top:3px;display:flex;align-items:flex-start"><span>${it.item_name}</span><span class="copy-ic" title="คัดลอกชื่อรายการ" onclick="copyText(${JSON.stringify(it.item_name||'')},'ชื่อรายการ')"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></span></div>
