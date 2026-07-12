@@ -907,9 +907,68 @@ function openBRRequestsList(){
         <div style="font-weight:700;font-size:13.5px">${escHtml(r.item_name)}</div>
         <div style="font-size:11.5px;color:var(--s5);margin-top:2px">เลขที่ BR: ${escHtml(r.br_id||'–')} · ผู้ขอ: ${escHtml(r.requested_by||'–')} · ${r.created_at?new Date(r.created_at).toLocaleDateString('th-TH'):''}</div>
       </div>
-      <button type="button" class="btn btn-primary btn-sm" style="flex:none;background:#2563eb;border-color:#2563eb" onclick="pickBRRequest(${r.id})">เลือกออกรหัส</button>
+      <div style="display:flex;gap:6px;flex:none">
+        <button type="button" class="btn btn-outline btn-sm" style="flex:none" onclick="findExistingForBR(${r.id})">🔎 มีรหัสแล้ว</button>
+        <button type="button" class="btn btn-primary btn-sm" style="flex:none;background:#2563eb;border-color:#2563eb" onclick="pickBRRequest(${r.id})">ออกรหัสใหม่</button>
+      </div>
     </div>`).join('') + `</div>`;
-  Swal.fire({title:`🔵 คำขอออกรหัสจาก BRPR (${PS.brPending.length})`,html,width:560,showConfirmButton:false,showCloseButton:true});
+  Swal.fire({title:`🔵 คำขอออกรหัสจาก BRPR (${PS.brPending.length})`,html,width:600,showConfirmButton:false,showCloseButton:true});
+}
+
+// [BRPR] ค้นหาว่าไอเทมที่ขอมี "รหัสอยู่แล้ว" หรือไม่ — ถ้ามีให้เลือกส่งกลับได้เลยโดยไม่ต้องออกรหัสใหม่
+async function findExistingForBR(id){
+  const r = PS.brPending.find(x=>x.id===id);
+  if(!r) return;
+  Swal.fire({title:'กำลังค้นหารหัสที่มีอยู่...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+  try{
+    const term = (r.item_name||'').trim();
+    // ค้นด้วยชื่อ (ไทย/อังกฤษ) หรือรหัส
+    const rows = await DB.get('items',
+      `or=(item_name.ilike.*${encodeURIComponent(term)}*,english_name.ilike.*${encodeURIComponent(term)}*,item_code.ilike.*${encodeURIComponent(term)}*)&select=item_code,item_name,english_name,inventory_uom,sys_uom_name,is_inactive&order=item_code.asc&limit=50`);
+    if(!rows.length){
+      return Swal.fire({icon:'info',title:'ไม่พบรหัสที่ตรงกัน',html:`<div style="font-size:13px">ไม่พบไอเทมที่มีรหัสอยู่แล้วสำหรับ<br><b>"${escHtml(term)}"</b><br><span style="color:var(--s5)">ให้กด “ออกรหัสใหม่” เพื่อสร้างรหัสแทน</span></div>`,confirmButtonText:'ปิด',confirmButtonColor:'#2563eb'});
+    }
+    const list = rows.map(it=>`
+      <div style="border:1px solid var(--s2);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;${it.is_inactive?'opacity:.55':''}">
+        <div style="min-width:0;text-align:left">
+          <div style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;color:var(--g7)">${it.item_code}${it.is_inactive?' <span class="badge ba">In-Active</span>':''}</div>
+          <div style="font-size:12.5px;margin-top:1px">${escHtml(it.item_name||'')}</div>
+          <div style="font-size:11px;color:var(--s5)">หน่วยนับ: ${escHtml(it.inventory_uom||it.sys_uom_name||'–')}</div>
+        </div>
+        <button type="button" class="btn btn-success btn-sm" style="flex:none" onclick="confirmExistingForBR(${id},'${it.item_code}')">เลือกส่งกลับ</button>
+      </div>`).join('');
+    Swal.fire({title:`พบ ${rows.length} รหัสที่ใกล้เคียง`,html:`<div style="max-height:58vh;overflow:auto">${list}</div>`,width:600,showConfirmButton:false,showCloseButton:true});
+  }catch(e){ Swal.fire('ค้นหาไม่สำเร็จ', e.message, 'error'); }
+}
+
+// [BRPR] ยืนยันเลือกรหัสเดิม แล้วส่งกลับ BRPR ทันที (ไม่ต้องออกรหัสใหม่/ไม่แตะตะกร้า)
+async function confirmExistingForBR(id, code){
+  const r = PS.brPending.find(x=>x.id===id);
+  if(!r) return;
+  const items = await DB.get('items', `item_code=eq.${code}&limit=1`);
+  if(!items.length) return Swal.fire('ผิดพลาด','ไม่พบข้อมูลรหัสนี้','error');
+  const it = items[0];
+  const uom = it.inventory_uom || it.sys_uom_name || '';
+  const cf = await Swal.fire({
+    title:'ส่งรหัสเดิมกลับ BRPR?',icon:'question',showCancelButton:true,reverseButtons:true,
+    confirmButtonText:'ส่งกลับ',cancelButtonText:'ยกเลิก',confirmButtonColor:'#16a34a',
+    html:`<div style="text-align:left;font-size:13px;line-height:1.7">
+      <div>คำขอ BR: <b>${escHtml(r.br_id||'–')}</b></div>
+      <div>รหัสที่ส่งกลับ: <b style="font-family:monospace;color:var(--g7)">${it.item_code}</b></div>
+      <div>ชื่อรายการ: <b>${escHtml(it.item_name||'')}</b></div>
+      <div>หน่วยนับ: <b>${escHtml(uom||'–')}</b></div>
+    </div>`
+  });
+  if(!cf.isConfirmed) return;
+  Swal.fire({title:'กำลังส่งกลับ...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+  try{
+    if(!(typeof BRDB!=='undefined' && BRDB.enabled())) throw new Error('ยังไม่ได้ตั้งค่าการเชื่อมต่อ BRPR (BRPR_ANON) ใน config.js');
+    await BRDB.patch('item_code_requests', `id=eq.${id}`, {
+      status:'issued', code:it.item_code, item_name:it.item_name||null, unit:uom
+    });
+    await checkBRRequests();
+    Swal.fire({icon:'success',title:'ส่งรหัสกลับ BRPR แล้ว',text:`${it.item_code} → BR ${r.br_id||''}`,confirmButtonColor:'#2563eb'});
+  }catch(e){ Swal.fire('ส่งกลับไม่สำเร็จ', e.message, 'error'); }
 }
 
 function pickBRRequest(id){
