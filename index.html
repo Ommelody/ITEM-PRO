@@ -334,6 +334,7 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
     <div class="nav-item admin-only" data-page="page-users"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-5-4M9 20H4v-2a4 4 0 015-4m6 0a4 4 0 10-8 0 4 4 0 008 0zm6-8a4 4 0 10-8 0 4 4 0 008 0z"/></svg><span>จัดการผู้ใช้งาน</span></div>
     <div class="nav-item admin-only" data-page="page-import"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg><span>นำเข้าข้อมูล (Excel)</span></div>
     <div class="nav-item admin-only" data-page="page-cgd"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span>รหัสกรมบัญชีกลาง</span></div>
+    <div class="nav-item admin-only" data-page="page-logs"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-5 8l2 2 4-4"/></svg><span>บันทึกการใช้งาน (Log)</span></div>
     <div class="sidebar-foot">
       <div class="user-info-side"><strong id="sb-name">–</strong><span id="sb-role">–</span></div>
       <button class="btn btn-danger btn-sm" style="width:100%" onclick="logout()">ออกจากระบบ</button>
@@ -712,6 +713,50 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
       </div>
     </div>
 
+    <!-- LOGS -->
+    <div class="page" id="page-logs">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><h3>🧾 บันทึกการใช้งาน (Activity Log)</h3>
+          <button class="btn btn-success btn-sm" onclick="exportLogsExcel()">⬇ Export Excel</button>
+        </div>
+        <div class="card-body">
+          <div class="g4" style="align-items:end;gap:12px">
+            <div class="fg"><label>ตั้งแต่วันที่</label><input type="date" id="log-start"></div>
+            <div class="fg"><label>ถึงวันที่</label><input type="date" id="log-end"></div>
+            <div class="fg"><label>ประเภท</label>
+              <select id="log-action">
+                <option value="">-- ทุกประเภท --</option>
+                <option value="login">เข้าสู่ระบบ</option>
+                <option value="logout">ออกจากระบบ</option>
+                <option value="create_job">ออกรหัส/บันทึกใบงาน</option>
+                <option value="edit_item">แก้ไขไอเทม</option>
+                <option value="approve_item">อนุมัติไอเทม</option>
+                <option value="delete_item">ลบไอเทม</option>
+                <option value="delete_job">ลบใบงาน</option>
+                <option value="master_add">เพิ่มข้อมูลหลัก</option>
+                <option value="master_delete">ลบข้อมูลหลัก</option>
+                <option value="export">Export ข้อมูล</option>
+                <option value="pr_issue">ส่งรหัสกลับ PR ORDER</option>
+                <option value="br_issue">ส่งรหัสกลับ BRPR</option>
+              </select>
+            </div>
+            <div class="fg"><label>ผู้ใช้ / คำค้น</label><input type="text" id="log-search" placeholder="ชื่อ/username/รายละเอียด"></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-primary" onclick="loadLogs()">ค้นหา</button>
+            <button class="btn" style="background:var(--a6);color:#fff;border:1px solid var(--a6)" onclick="clearLogFilter()">✕ ล้าง</button>
+            <span style="margin-left:auto;font-size:12px;color:var(--s5);align-self:center" id="log-total"></span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <table class="dt">
+          <thead><tr><th style="width:150px">วันที่ / เวลา</th><th style="width:120px">ประเภท</th><th>รายละเอียด</th><th style="width:150px">ผู้ทำรายการ</th></tr></thead>
+          <tbody id="logs-tbody"><tr><td colspan="4" style="text-align:center;padding:24px;color:var(--s4)">กดค้นหาเพื่อแสดงบันทึก</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- PRINT -->
     <div class="page" id="page-print">
       <button class="btn btn-secondary no-print" onclick="window.print()" style="margin-bottom:12px">🖨️ พิมพ์เอกสาร</button>
@@ -871,6 +916,7 @@ async function sendCodeBackToPR(item){
       });
     }catch(e){ console.warn('sendCodeBackToPR (webapp push) failed', e); }
   }
+  if(typeof logAction==='function') logAction('pr_issue', {code:item.item_code, pr_ref:item.pr_ref||null, uom}, 'pr', item.pr_request_id);
   $('#nav-pr-badge').text(Math.max(0,(PS.prPending.length||1)-1));
   $('#nav-pr-badge').text(Math.max(0,(PS.prPending.length||1)-1));
   checkPRRequests();
@@ -966,6 +1012,7 @@ async function confirmExistingForBR(id, code){
     await BRDB.patch('item_code_requests', `id=eq.${id}`, {
       status:'issued', code:it.item_code, item_name:it.item_name||null, unit:uom
     });
+    if(typeof logAction==='function')logAction('br_issue',{code:it.item_code,br_id:id,unit:uom,existing:true},'br',id);
     await checkBRRequests();
     Swal.fire({icon:'success',title:'ส่งรหัสกลับ BRPR แล้ว',text:`${it.item_code} → BR ${r.br_id||''}`,confirmButtonColor:'#2563eb'});
   }catch(e){ Swal.fire('ส่งกลับไม่สำเร็จ', e.message, 'error'); }
@@ -996,6 +1043,7 @@ async function sendCodeBackToBR(item){
       item_name:item.item_name || null, // เขียนทับชื่อรายการเดิมด้วยชื่อที่ตั้งจริงตอนออกรหัส
       unit:uom                            // หน่วยนับที่ออกจริง
     });
+    if(typeof logAction==='function') logAction('br_issue', {code:item.item_code, br_id:item.br_request_id, unit:uom}, 'br', item.br_request_id);
   }catch(e){ console.warn('sendCodeBackToBR failed', e); }
   checkBRRequests();
 }
@@ -1051,11 +1099,58 @@ $('#reg-form').on('submit',async function(e){
   }
 });
 
-function logout(){CU=null;$('#app-main').hide();$('#auth-screen').css('display','flex');}
+// ===================== ACTIVITY LOG VIEWER =====================
+PS.logs = { data: [] };
+const LOG_LABELS = {login:'เข้าสู่ระบบ',logout:'ออกจากระบบ',create_job:'ออกรหัส/บันทึกใบงาน',edit_item:'แก้ไขไอเทม',approve_item:'อนุมัติไอเทม',delete_item:'ลบไอเทม',delete_job:'ลบใบงาน',master_add:'เพิ่มข้อมูลหลัก',master_delete:'ลบข้อมูลหลัก',export:'Export ข้อมูล',pr_issue:'ส่งรหัสกลับ PR ORDER',br_issue:'ส่งรหัสกลับ BRPR'};
+function logLabel(a){ return LOG_LABELS[a] || a || '–'; }
+function fmtLogDetail(d){
+  if(d==null||d==='') return '–';
+  try{ const o=JSON.parse(d); return Object.entries(o).map(([k,v])=>`${k}: ${Array.isArray(v)?v.join(', '):v}`).join(' · '); }
+  catch(e){ return String(d); }
+}
+function clearLogFilter(){ $('#log-start,#log-end,#log-search').val(''); $('#log-action').val(''); loadLogs(); }
+async function loadLogs(){
+  try{
+    $('#logs-tbody').html('<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--s4)">กำลังโหลด...</td></tr>');
+    let q='order=created_at.desc';
+    const s=$('#log-start').val(), e=$('#log-end').val(), a=$('#log-action').val();
+    if(s)q+=`&created_at=gte.${s}T00:00:00`;
+    if(e)q+=`&created_at=lte.${e}T23:59:59`;
+    if(a)q+=`&action=eq.${a}`;
+    let rows = await dbFetchAll('activity_logs', q);
+    const term=($('#log-search').val()||'').trim().toLowerCase();
+    if(term) rows = rows.filter(r=>((r.actor_name||'')+' '+(r.actor_username||'')+' '+(r.detail||'')+' '+(r.target_id||'')).toLowerCase().includes(term));
+    PS.logs.data = rows;
+    $('#log-total').text(`ทั้งหมด ${rows.length.toLocaleString()} รายการ`);
+    if(!rows.length){ $('#logs-tbody').html('<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--s4)">ไม่พบบันทึกตามเงื่อนไข</td></tr>'); return; }
+    $('#logs-tbody').html(rows.slice(0,1000).map(r=>`<tr>
+      <td class="mono" style="font-size:11px;white-space:nowrap">${new Date(r.created_at).toLocaleString('th-TH')}</td>
+      <td><span class="badge bg">${logLabel(r.action)}</span></td>
+      <td style="font-size:12px">${escHtml(fmtLogDetail(r.detail))}${r.target_id?` <span style="color:var(--s4)">[${escHtml(r.target_id)}]</span>`:''}</td>
+      <td style="font-size:12px">${escHtml(r.actor_name||r.actor_username||'–')}${r.actor_role?` <span class="badge ${r.actor_role==='admin'?'bb':'bg'}">${r.actor_role}</span>`:''}</td>
+    </tr>`).join(''));
+  }catch(err){
+    $('#logs-tbody').html('<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--r6)">โหลดไม่สำเร็จ — ตรวจสอบว่าสร้างตาราง activity_logs แล้วหรือยัง (ดู ACTIVITY_LOG.md)</td></tr>');
+  }
+}
+function exportLogsExcel(){
+  const data = PS.logs.data||[];
+  if(!data.length) return Swal.fire('ไม่มีข้อมูล','กรุณาค้นหาก่อน Export','info');
+  const rows = data.map((r,i)=>({'ลำดับ':i+1,'วันที่/เวลา':r.created_at?new Date(r.created_at).toLocaleString('th-TH'):'','ประเภท':logLabel(r.action),'action':r.action||'','รายละเอียด':fmtLogDetail(r.detail),'เป้าหมาย':r.target_id||'','ผู้ทำรายการ':r.actor_name||'','username':r.actor_username||'','role':r.actor_role||''}));
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=Object.keys(rows[0]).map(k=>({wch:k.length>10?22:14}));
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'ActivityLog');
+  XLSX.writeFile(wb,`ActivityLog_${new Date().toISOString().slice(0,10)}.xlsx`);
+  Swal.fire({toast:true,position:'top-end',icon:'success',title:`Export ${rows.length} รายการสำเร็จ`,showConfirmButton:false,timer:2000});
+}
+
+// ===================== ACTIVITY LOG VIEWER END =====================
+function logout(){if(typeof logAction==='function')logAction('logout', CU?CU.username:null,'auth');CU=null;$('#app-main').hide();$('#auth-screen').css('display','flex');}
 
 // ===================== INIT =====================
 async function initApp(){
   $('#auth-screen').hide();$('#app-main').show();
+  if(typeof logAction==='function') logAction('login', CU?CU.username:null,'auth');
   $('#sb-name,#tb-name').text(CU.name);
   $('#sb-role').text(CU.role.toUpperCase());
   $('#tb-role').text(CU.role.toUpperCase());
@@ -1494,6 +1589,7 @@ $('#btn-process').on('click',async function(){
       await DB.patch('db_mstype',`group_code=eq.${code}`,{last_running_no:val});
       
     cart=[];renderCart();await loadMasterData();
+    if(typeof logAction==='function') logAction('create_job', {doc_num:docNum, count:generated.length, codes:generated}, 'job', docNum);
     Swal.fire({icon:'success',title:'ออกรหัสสำเร็จ!',html:`<b>${docNum}</b><br><small style="font-family:monospace">${generated.join('<br>')}</small>`,confirmButtonColor:'#256e4e'});
   }catch(e){Swal.fire('เกิดข้อผิดพลาด',e.message,'error');}
 });
@@ -1662,6 +1758,7 @@ function exportSearchExcel(){
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'ผลการค้นหา');
   XLSX.writeFile(wb,`ผลการค้นหาสินค้า_${new Date().toISOString().slice(0,10)}.xlsx`);
+  if(typeof logAction==='function')logAction('export',{mode:'search_result',count:rows.length},'export');
   Swal.fire({toast:true,position:'top-end',icon:'success',title:`Export ${rows.length} รายการสำเร็จ`,showConfirmButton:false,timer:2000});
 }
 
@@ -1834,6 +1931,9 @@ async function saveItemEditFull(code, btnEl) {
         if(p.status==='approved' && updated[0].br_request_id){
           sendCodeBackToBR(updated[0]);
         }
+        if(typeof logAction==='function'){
+          logAction(p.status==='approved'?'approve_item':'edit_item', {code, status:p.status}, 'item', code);
+        }
      }
      Swal.close(); // ปิดป็อบอัพฟอร์มแก้ไขทันทีที่บันทึกสำเร็จ ก่อนแสดง toast ยืนยัน
      renderSearch(PS.search.cur);
@@ -1850,7 +1950,7 @@ async function saveItemEditFull(code, btnEl) {
 async function deleteItem(code){
   const cf=await Swal.fire({title:'ยืนยันลบ?',text:'ข้อมูลจะถูกลบถาวร',icon:'warning',showCancelButton:true,confirmButtonColor:'#dc2626',confirmButtonText:'ลบ',cancelButtonText:'ยกเลิก'});
   if(!cf.isConfirmed)return;
-  try{await DB.delete('items',`item_code=eq.${code}`);Swal.close();doSearch();}catch(e){Swal.fire('Error',e.message,'error');}
+  try{await DB.delete('items',`item_code=eq.${code}`);if(typeof logAction==='function')logAction('delete_item',{code},'item',code);Swal.close();doSearch();}catch(e){Swal.fire('Error',e.message,'error');}
 }
 
 // ===================== HISTORY =====================
@@ -1908,6 +2008,7 @@ async function deleteJobOrder(docNum){
   try{
     await DB.delete('items',`doc_num=eq.${docNum}`);
     await DB.delete('job_orders',`doc_num=eq.${docNum}`);
+    if(typeof logAction==='function')logAction('delete_job',{doc_num:docNum},'job',docNum);
     Swal.fire({toast:true,position:'top-end',icon:'success',title:'ลบใบงานเรียบร้อย',showConfirmButton:false,timer:2000});
     loadHistory();
   }catch(e){Swal.fire('Error',e.message,'error');}
@@ -2106,13 +2207,13 @@ async function showAddMaster(type){
   const{isConfirmed,value}=await Swal.fire({title:C.title,html,showCancelButton:true,confirmButtonText:'บันทึก',cancelButtonText:'ยกเลิก',confirmButtonColor:'#256e4e',
     preConfirm:()=>{const o=C.extra?{...C.extra}:{};C.fields.forEach(f=>{o[f.key]=document.getElementById('m-'+f.id).value.trim()});return o;}});
   if(!isConfirmed||!value)return;
-  try{await DB.post(C.table,value);await loadMasterData();Swal.fire({toast:true,position:'top-end',icon:'success',title:'บันทึกสำเร็จ',showConfirmButton:false,timer:1500});}
+  try{await DB.post(C.table,value);await loadMasterData();if(typeof logAction==='function')logAction('master_add',{table:C.table,value},'master',type);Swal.fire({toast:true,position:'top-end',icon:'success',title:'บันทึกสำเร็จ',showConfirmButton:false,timer:1500});}
   catch(e){Swal.fire('Error',e.message,'error');}
 }
 
 async function delMaster(table,col,val){
   if(!confirm('ยืนยันลบข้อมูลนี้?'))return;
-  try{await DB.delete(table,`${col}=eq.${val}`);loadMasterData();}catch(e){Swal.fire('Error',e.message,'error');}
+  try{await DB.delete(table,`${col}=eq.${val}`);if(typeof logAction==='function')logAction('master_delete',{table,col,val},'master',val);loadMasterData();}catch(e){Swal.fire('Error',e.message,'error');}
 }
 
 // ===================== EXPORT =====================
@@ -2201,6 +2302,7 @@ async function exportCSV(mode){
     let csv="\uFEFF";
     [h1,h2,...dr].forEach(row=>{csv+=row.map(v=>{const s=(v??'').toString();return s.includes(',')||s.includes('"')||s.includes('\n')?`"${s.replace(/"/g,'""')}"`:s;}).join(',')+'\r\n';});
     const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download=`${fileName}.csv`;a.click();
+    if(typeof logAction==='function')logAction('export',{mode,count:rows.length,file:fileName},'export');
     Swal.fire({toast:true,position:'top-end',icon:'success',title:`Export ${rows.length} รายการสำเร็จ`,showConfirmButton:false,timer:2000});
   }catch(e){Swal.fire('ผิดพลาด',e.message,'error');}
 }
@@ -2341,8 +2443,9 @@ async function processExcelImport(type){
 function switchPage(p){
   $('.page').removeClass('active');$('#'+p).addClass('active');
   $('.nav-item').removeClass('active');$(`.nav-item[data-page="${p}"]`).addClass('active');
-  const T={'page-create':'ออกรหัสพัสดุ','page-history':'ประวัติใบงาน','page-search':'ค้นหา / จัดการสถานะ','page-export':'Export CSV / DTW','page-master':'ข้อมูลหลัก (Master)','page-users':'จัดการผู้ใช้งาน','page-import':'นำเข้าข้อมูล','page-print':'พิมพ์ใบงาน','page-cgd':'รหัสกรมบัญชีกลาง'};
+  const T={'page-create':'ออกรหัสพัสดุ','page-history':'ประวัติใบงาน','page-search':'ค้นหา / จัดการสถานะ','page-export':'Export CSV / DTW','page-master':'ข้อมูลหลัก (Master)','page-users':'จัดการผู้ใช้งาน','page-import':'นำเข้าข้อมูล','page-print':'พิมพ์ใบงาน','page-cgd':'รหัสกรมบัญชีกลาง','page-logs':'บันทึกการใช้งาน'};
   $('#page-title').text(T[p]||'');
+  if(p==='page-logs' && typeof loadLogs==='function') loadLogs();
   // sync bottom nav (มือถือ)
   $('.bn-item').removeClass('active');$(`.bn-item[data-page="${p}"]`).addClass('active');
 }
