@@ -925,13 +925,17 @@ function pickBRRequest(id){
   Swal.fire({toast:true,position:'top-end',icon:'info',title:'นำชื่อรายการจาก BRPR มาใส่แล้ว — กรอกข้อมูลที่เหลือให้ครบ',showConfirmButton:false,timer:2600});
 }
 
-// เรียกเมื่อออกรหัส "อนุมัติ" สำเร็จ เพื่อส่งรหัสกลับไปที่ BRPR (item_code_requests.code + status=issued)
+// เรียกเมื่อออกรหัส "อนุมัติ" สำเร็จ เพื่อส่งรหัส/ชื่อ/หน่วยนับกลับไปที่ BRPR
 async function sendCodeBackToBR(item){
   if(!item || !item.br_request_id) return;
   if(!(typeof BRDB!=='undefined' && BRDB.enabled())) return;
+  const uom = item.inventory_uom || item.sys_uom_name || '';
   try{
     await BRDB.patch('item_code_requests', `id=eq.${item.br_request_id}`, {
-      status:'issued', code:item.item_code
+      status:'issued',
+      code:item.item_code,
+      item_name:item.item_name || null, // เขียนทับชื่อรายการเดิมด้วยชื่อที่ตั้งจริงตอนออกรหัส
+      unit:uom                            // หน่วยนับที่ออกจริง
     });
   }catch(e){ console.warn('sendCodeBackToBR failed', e); }
   checkBRRequests();
