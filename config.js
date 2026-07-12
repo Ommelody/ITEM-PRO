@@ -10,6 +10,12 @@ const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 // ใช้สำหรับ "push" แจ้งกลับแบบ real-time ทันทีที่ออกรหัสเสร็จ (ทางเลือกเสริม — เว้นว่างได้ ระบบยังทำงานผ่านตาราง pr_code_requests ตามปกติ)
 const PR_ORDER_WEBAPP_URL = ""; // เช่น "https://script.google.com/macros/s/XXXX/exec"
 
+// [BRPR / ERP ธรรมศาสตร์ Integration] ระบบ BRPR ใช้ Supabase คนละโปรเจกต์
+// ตาราง "item_code_requests" อยู่บน Supabase ของ BRPR — วาง URL + anon key ของ BRPR ตรงนี้
+// (โปรเจกต์ ref: hkqyeeonfyzlbnimztuz — ขอ anon public key จากทีม BRPR)
+const BRPR_SUPABASE_URL = "https://hkqyeeonfyzlbnimztuz.supabase.co";
+const BRPR_ANON = ""; // <-- วาง anon public key ของ BRPR ตรงนี้ (ว่าง = ปิดการเชื่อม BRPR ไว้ก่อน)
+
 // ---- internal: do not edit below ----
 const _headers = () => ({
   "Content-Type": "application/json",
@@ -66,6 +72,29 @@ const DB = {
       method: "POST",
       headers: _headers(),
       body: JSON.stringify(params)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
+};
+
+// ---- BRPR cross-Supabase client (ตาราง item_code_requests อยู่บน Supabase ของ BRPR) ----
+const _brHeaders = () => ({
+  "Content-Type": "application/json",
+  "apikey": BRPR_ANON,
+  "Authorization": `Bearer ${BRPR_ANON}`,
+  "Prefer": "return=representation"
+});
+const BRDB = {
+  enabled(){ return !!(BRPR_SUPABASE_URL && BRPR_ANON); },
+  async get(table, params = "") {
+    const res = await fetch(`${BRPR_SUPABASE_URL}/rest/v1/${table}?${params}`, { headers: _brHeaders() });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+  async patch(table, filter, body) {
+    const res = await fetch(`${BRPR_SUPABASE_URL}/rest/v1/${table}?${filter}`, {
+      method: "PATCH", headers: _brHeaders(), body: JSON.stringify(body)
     });
     if (!res.ok) throw new Error(await res.text());
     return res.json();

@@ -377,6 +377,17 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
         </div>
         <button type="button" class="btn" style="background:#dc2626;color:#fff;border:1px solid #dc2626;flex:none" onclick="openPRRequestsList()">🔴 ออกรหัสจาก PR ORDER</button>
       </div>
+      <!-- [BRPR] แจ้งเตือนคำขอออกรหัสที่ส่งมาจากระบบ BRPR (ERP ธรรมศาสตร์) -->
+      <div id="br-alert-box" style="display:none;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:12px;padding:14px 18px;margin-bottom:16px;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="width:38px;height:38px;border-radius:50%;background:#2563eb;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex:none">🔔</span>
+          <div>
+            <div style="font-weight:700;color:#1e40af;font-size:14.5px">มีคำขอออกรหัสจาก BRPR (ERP) รอดำเนินการ <span id="br-alert-count">0</span> รายการ</div>
+            <div style="font-size:12.5px;color:#1d4ed8">รับชื่อรายการ + เลขที่ BR มา — ตรวจสอบและกรอกข้อมูลให้ครบก่อนออกรหัส</div>
+          </div>
+        </div>
+        <button type="button" class="btn" style="background:#2563eb;color:#fff;border:1px solid #2563eb;flex:none" onclick="openBRRequestsList()">🔵 ออกรหัสจาก BRPR</button>
+      </div>
       <div class="card">
         <div class="card-header"><h3>เพิ่มรายการสินค้าในใบงาน</h3></div>
         <div class="card-body">
@@ -810,9 +821,9 @@ async function checkPRRequests(){
     const rows = await DB.get('pr_code_requests','status=eq.pending&order=created_at.asc&limit=200');
     PS.prPending = rows||[];
     const n = PS.prPending.length;
-    $('#nav-pr-badge').toggle(n>0).text(n);
     $('#pr-alert-box').css('display', n>0 ? 'flex' : 'none');
     $('#pr-alert-count').text(n);
+    updateExtBadge();
   }catch(e){ /* ตารางอาจยังไม่ถูกสร้าง — เงียบไว้ ไม่รบกวนการทำงานหลัก */ }
 }
 
@@ -861,7 +872,69 @@ async function sendCodeBackToPR(item){
     }catch(e){ console.warn('sendCodeBackToPR (webapp push) failed', e); }
   }
   $('#nav-pr-badge').text(Math.max(0,(PS.prPending.length||1)-1));
+  $('#nav-pr-badge').text(Math.max(0,(PS.prPending.length||1)-1));
   checkPRRequests();
+}
+
+// ===================== BRPR (ERP ธรรมศาสตร์) INTEGRATION =====================
+// [BRPR] คำขอออกรหัสมาผ่านตาราง "item_code_requests" บน Supabase ของ BRPR (คนละโปรเจกต์)
+// สคีมา: id, br_id, item_name, requested_by, code, status('requested'|'issued'), created_at
+PS.brPending = [];
+PS.brActive = null; // { id, br_id }
+
+function updateExtBadge(){
+  const n = (PS.prPending.length||0) + (PS.brPending.length||0);
+  $('#nav-pr-badge').toggle(n>0).text(n);
+}
+
+async function checkBRRequests(){
+  if(!(typeof BRDB!=='undefined' && BRDB.enabled())){ $('#br-alert-box').hide(); return; }
+  try{
+    const rows = await BRDB.get('item_code_requests','status=eq.requested&order=created_at.asc&limit=200');
+    PS.brPending = rows||[];
+    const n = PS.brPending.length;
+    $('#br-alert-box').css('display', n>0 ? 'flex' : 'none');
+    $('#br-alert-count').text(n);
+    updateExtBadge();
+  }catch(e){ /* ตารางอาจยังไม่พร้อม / key ไม่ถูกต้อง — เงียบไว้ */ }
+}
+
+function openBRRequestsList(){
+  if(!PS.brPending.length) return checkBRRequests();
+  const html = `<div style="text-align:left;max-height:60vh;overflow:auto">` + PS.brPending.map(r=>`
+    <div style="border:1px solid var(--s2);border-radius:10px;padding:11px 13px;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <div style="min-width:0">
+        <div style="font-weight:700;font-size:13.5px">${escHtml(r.item_name)}</div>
+        <div style="font-size:11.5px;color:var(--s5);margin-top:2px">เลขที่ BR: ${escHtml(r.br_id||'–')} · ผู้ขอ: ${escHtml(r.requested_by||'–')} · ${r.created_at?new Date(r.created_at).toLocaleDateString('th-TH'):''}</div>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" style="flex:none;background:#2563eb;border-color:#2563eb" onclick="pickBRRequest(${r.id})">เลือกออกรหัส</button>
+    </div>`).join('') + `</div>`;
+  Swal.fire({title:`🔵 คำขอออกรหัสจาก BRPR (${PS.brPending.length})`,html,width:560,showConfirmButton:false,showCloseButton:true});
+}
+
+function pickBRRequest(id){
+  const r = PS.brPending.find(x=>x.id===id);
+  if(!r) return;
+  Swal.close();
+  PS.brActive = {id:r.id, br_id:r.br_id};
+  PS.prActive = null; // กันสับสนกับ PR ORDER
+  switchPage('page-create');
+  closeMobileSidebar();
+  $('#f-itemName').val(r.item_name||'');
+  window.scrollTo(0,0);
+  Swal.fire({toast:true,position:'top-end',icon:'info',title:'นำชื่อรายการจาก BRPR มาใส่แล้ว — กรอกข้อมูลที่เหลือให้ครบ',showConfirmButton:false,timer:2600});
+}
+
+// เรียกเมื่อออกรหัส "อนุมัติ" สำเร็จ เพื่อส่งรหัสกลับไปที่ BRPR (item_code_requests.code + status=issued)
+async function sendCodeBackToBR(item){
+  if(!item || !item.br_request_id) return;
+  if(!(typeof BRDB!=='undefined' && BRDB.enabled())) return;
+  try{
+    await BRDB.patch('item_code_requests', `id=eq.${item.br_request_id}`, {
+      status:'issued', code:item.item_code
+    });
+  }catch(e){ console.warn('sendCodeBackToBR failed', e); }
+  checkBRRequests();
 }
 
 // ===================== MOBILE APP / PWA =====================
@@ -936,7 +1009,9 @@ async function initApp(){
   updateAvatarUI();
   loadCGDForDropdown();
   checkPRRequests();
+  checkBRRequests();
   setInterval(checkPRRequests, 45000); // [PR ORDER] เช็คคำขอใหม่ทุก 45 วินาที
+  setInterval(checkBRRequests, 45000); // [BRPR] เช็คคำขอใหม่ทุก 45 วินาที
 }
 
 async function loadCGDForDropdown(){
@@ -1217,6 +1292,8 @@ $('#itemForm').on('submit',function(e){
     // [PR ORDER] ผูกรายการนี้กับคำขอที่เลือกไว้ (ถ้ามี) เพื่อส่งรหัสกลับหลังอนุมัติ
     prRequestId: PS.prActive ? PS.prActive.id : null,
     prRef: PS.prActive ? PS.prActive.pr_ref : null,
+    brRequestId: PS.brActive ? PS.brActive.id : null,   // [BRPR]
+    brId: PS.brActive ? PS.brActive.br_id : null,        // [BRPR]
     msType,msTypeName:$('#f-msType option:selected').text().replace(/^\[.*?\]\s*/,''),
     itemGroup:$('#f-itemGroup').val(),itemGroupText:$('#f-itemGroup option:selected').text().replace(/^\[.*?\]\s*/,''),
     itemName:$('#f-itemName').val(),engName:$('#f-engName').val(),
@@ -1236,6 +1313,7 @@ $('#itemForm').on('submit',function(e){
   });
   renderCart();
   PS.prActive = null; // เคลียร์การผูก PR request หลังเพิ่มลงตะกร้าแล้ว (ป้องกันผูกซ้ำกับรายการถัดไป)
+  PS.brActive = null; // [BRPR] เคลียร์การผูก BR request เช่นกัน
   $('#f-itemName,#f-engName,#f-oldCode,#f-refNo,#f-barcode,#f-tradeName').val('');
   $('#f-cgdCode').val('').trigger('change');
   Swal.fire({toast:true,position:'top-end',icon:'success',title:'เพิ่มลงตะกร้าแล้ว',showConfirmButton:false,timer:1500});
@@ -1281,6 +1359,7 @@ function editCartItem(idx){
   $('#f-vatGroup').val(c.vatGroup||'');
   $('#f-cost').val(c.costPrice||0);
   PS.prActive = c.prRequestId ? {id:c.prRequestId, pr_ref:c.prRef} : null;
+  PS.brActive = c.brRequestId ? {id:c.brRequestId, br_id:c.brId} : null; // [BRPR]
   calcPrice();
   window.scrollTo(0,0);
   Swal.fire({toast:true,position:'top-end',icon:'info',title:'นำรายการมาที่ฟอร์มแล้ว — แก้ไขแล้วกด "+ เพิ่มลงตะกร้า" อีกครั้ง',showConfirmButton:false,timer:2600});
@@ -1317,11 +1396,13 @@ $('#btn-process').on('click',async function(){
       inserts.push({
         doc_num:docNum,item_code:code,
         pr_request_id:c.prRequestId||null, // [PR ORDER] ผูกกับคำขอต้นทาง (ถ้ามี)
+        br_request_id:c.brRequestId||null, // [BRPR] ผูกกับคำขอ BRPR (ถ้ามี)
         u_ntt_old_code:c.oldCode||null,
         u_ntt_ref_no:c.refNo||null,
         u_ntt_barcode:c.barcode||null,
         u_ntt_cgd_code:c.cgdCode||null,  // [1]
-        u_ntt_remark: c.prRequestId ? `รายการออกรหัสจาก PR ORDER${c.prRef ? ` (เลขที่ ${c.prRef})` : ''}` : null, // [1] หมายเหตุที่มาของรายการ + เลขที่ PR/BR
+        u_ntt_remark: c.prRequestId ? `รายการออกรหัสจาก PR ORDER${c.prRef ? ` (เลขที่ ${c.prRef})` : ''}`
+                    : c.brRequestId ? `รายการออกรหัสจาก BRPR${c.brId ? ` (เลขที่ BR ${c.brId})` : ''}` : null, // [1] หมายเหตุที่มาของรายการ + เลขที่ PR/BR
         item_name:c.itemName,foreign_name:c.engName||c.itemName,
         english_name:c.engName||null,u_ntt_trade_name:c.tradeName||null,
         item_type:'I',items_group_code:c.itemGroup,items_group_text:c.itemGroupText,
@@ -1685,6 +1766,10 @@ async function saveItemEditFull(code, btnEl) {
         // [PR ORDER] เมื่อกดอนุมัติ (status=approved) และรายการนี้มาจาก PR ORDER ให้ส่งรหัส/ชื่อ/หน่วยนับกลับไปอัตโนมัติ
         if(p.status==='approved' && updated[0].pr_request_id){
           sendCodeBackToPR(updated[0]);
+        }
+        // [BRPR] ส่งรหัสกลับไป BRPR เมื่ออนุมัติ
+        if(p.status==='approved' && updated[0].br_request_id){
+          sendCodeBackToBR(updated[0]);
         }
      }
      Swal.close(); // ปิดป็อบอัพฟอร์มแก้ไขทันทีที่บันทึกสำเร็จ ก่อนแสดง toast ยืนยัน
