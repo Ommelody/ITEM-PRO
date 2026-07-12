@@ -78,7 +78,26 @@ const DB = {
   }
 };
 
-// ---- BRPR cross-Supabase client (ตาราง item_code_requests อยู่บน Supabase ของ BRPR) ----
+// ---- Activity Log (บันทึกทุก transaction เพื่อตรวจสอบย้อนหลัง) ----
+// best-effort: ถ้าตาราง activity_logs ยังไม่ถูกสร้าง หรือเขียนไม่สำเร็จ จะไม่รบกวนการทำงานหลัก
+async function logAction(action, detail, targetType, targetId){
+  try{
+    const u = (typeof CU!=='undefined' && CU) ? CU : {};
+    await fetch(`${SUPABASE_URL}/rest/v1/activity_logs`, {
+      method:"POST",
+      headers:{ ..._headers(), "Prefer":"return=minimal" },
+      body: JSON.stringify({
+        action: action || '',
+        detail: (detail==null) ? null : (typeof detail==='string' ? detail : JSON.stringify(detail)),
+        target_type: targetType || null,
+        target_id: targetId!=null ? String(targetId) : null,
+        actor_name: u.name || null,
+        actor_username: u.username || null,
+        actor_role: u.role || null
+      })
+    });
+  }catch(e){ /* เงียบไว้ */ }
+}
 const _brHeaders = () => ({
   "Content-Type": "application/json",
   "apikey": BRPR_ANON,
