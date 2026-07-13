@@ -14,7 +14,7 @@ const PR_ORDER_WEBAPP_URL = ""; // เช่น "https://script.google.com/macro
 // ตาราง "item_code_requests" อยู่บน Supabase ของ BRPR — วาง URL + anon key ของ BRPR ตรงนี้
 // (โปรเจกต์ ref: hkqyeeonfyzlbnimztuz — ขอ anon public key จากทีม BRPR)
 const BRPR_SUPABASE_URL = "https://hkqyeeonfyzlbnimztuz.supabase.co";
-const BRPR_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN6b3hmanprZHd1cnhsdmV2a2pzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NTI1NjIsImV4cCI6MjA5NDIyODU2Mn0.qxR9oWXKAiMkk9dWJMIHU1K6hBWtS51T_FL5TqDeLyQ"; // <-- วาง anon public key ของ BRPR ตรงนี้ (ว่าง = ปิดการเชื่อม BRPR ไว้ก่อน)
+const BRPR_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrcXllZW9uZnl6bGJuaW16dHV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2ODU4NDMsImV4cCI6MjA5OTI2MTg0M30.Od-n8yNuIWu6Kx1Y_mW6Aemg3TRCxZG5ooTESpOgZBE"; // <-- วาง anon public key ของ BRPR ตรงนี้ (ว่าง = ปิดการเชื่อม BRPR ไว้ก่อน)
 
 // ---- internal: do not edit below ----
 const _headers = () => ({
