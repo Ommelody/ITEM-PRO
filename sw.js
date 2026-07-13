@@ -1,6 +1,6 @@
 // sw.js — Item Master Pro V2 PWA service worker
 // Caches the app shell for install + offline shell. Never caches Supabase API (cross-origin).
-const CACHE = 'imp-shell-v1';
+const CACHE = 'imp-shell-v3';
 const SHELL = [
   './',
   './index.html',
@@ -34,6 +34,18 @@ self.addEventListener('fetch', e => {
         caches.open(CACHE).then(c => c.put(req, copy));
         return res;
       }).catch(() => caches.match(req).then(r => r || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // Network-first for JS/HTML shell files (config.js, index.html) so code updates propagate immediately.
+  if (/\.(?:js|html)(?:\?.*)?$/i.test(new URL(req.url).pathname)) {
+    e.respondWith(
+      fetch(req).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(req, copy));
+        return res;
+      }).catch(() => caches.match(req))
     );
     return;
   }

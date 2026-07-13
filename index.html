@@ -830,6 +830,27 @@ let EXP_MODE = 'date';
 // ===================== UTILS =====================
 function escHtml(str){ return str ? String(str).replace(/"/g,'&quot;').replace(/'/g,'&#39;') : ''; }
 
+// [Activity Log] นิยาม logAction ไว้ในไฟล์นี้เอง (ไม่พึ่ง config.js เวอร์ชันใหม่)
+// ถ้า config.js มี logAction อยู่แล้ว ตัวนี้จะ override — พฤติกรรมเหมือนกัน
+async function logAction(action, detail, targetType, targetId){
+  try{
+    const u = (typeof CU!=='undefined' && CU) ? CU : {};
+    await fetch(`${SUPABASE_URL}/rest/v1/activity_logs`, {
+      method:"POST",
+      headers:{ ..._headers(), "Prefer":"return=minimal" },
+      body: JSON.stringify({
+        action: action || '',
+        detail: (detail==null) ? null : (typeof detail==='string' ? detail : JSON.stringify(detail)),
+        target_type: targetType || null,
+        target_id: targetId!=null ? String(targetId) : null,
+        actor_name: u.name || null,
+        actor_username: u.username || null,
+        actor_role: u.role || null
+      })
+    });
+  }catch(e){ /* เงียบไว้ ไม่รบกวนการทำงานหลัก */ }
+}
+
 // [3] Fetch ALL rows for a table, paging past Supabase's per-request row cap
 async function dbFetchAll(table, baseQuery){
   const pageSize = 1000;
