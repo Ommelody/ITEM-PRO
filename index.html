@@ -404,6 +404,13 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
               <div class="fg s2"><label>Barcode <span style="font-size:10px;color:var(--s4)">(ถ้ามี)</span></label><input id="f-barcode" class="barcode-input" placeholder="สแกนหรือพิมพ์บาร์โค้ด" autocomplete="off"></div>
               <div class="fg"><label>ชื่อการค้า</label><input id="f-tradeName"></div>
               <div class="fg"><label>Interface</label><select id="f-interface"><option value="N">N</option><option value="Y">Y</option></select></div>
+              <div class="fg s2"><label>ประเภทรายการ (Y = ติ๊ก / N = ไม่ติ๊ก)</label>
+                <div style="display:flex;gap:16px;align-items:center;padding:8px 12px;border:1px solid var(--s2);border-radius:var(--rad);background:#fff;min-height:38px">
+                  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;margin:0"><input type="checkbox" id="f-purchaseItem" checked style="width:auto;margin:0"> PurchaseItem</label>
+                  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;margin:0"><input type="checkbox" id="f-salesItem" style="width:auto;margin:0"> SalesItem</label>
+                  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;margin:0"><input type="checkbox" id="f-inventoryItem" style="width:auto;margin:0"> InventoryItem</label>
+                </div>
+              </div>
               <div class="fg"><label>VAT Group (Auto)</label><input id="f-vatGroup" readonly placeholder="จับคู่อัตโนมัติ"></div>
               <!-- [1] รหัสเบิกกรมบัญชีกลาง - dropdown from DB -->
               <div class="fg s2"><label>รหัสเบิกกรมบัญชีกลาง <span style="font-size:10px;color:var(--s4)">(CGD Code)</span></label><select id="f-cgdCode" class="sel2"><option value="">— ค้นหารหัสกรมบัญชี —</option></select></div>
@@ -1482,6 +1489,9 @@ $('#itemForm').on('submit',function(e){
     tradeName:$('#f-tradeName').val(),
     cgdCode:$('#f-cgdCode').val()||'',  // [1] - select2 returns the cgd_full string directly
     interfaceStatus:$('#f-interface').val(),vatGroup:$('#f-vatGroup').val(),
+    purchaseItem:$('#f-purchaseItem').is(':checked')?'Y':'N',
+    salesItem:$('#f-salesItem').is(':checked')?'Y':'N',
+    inventoryItem:$('#f-inventoryItem').is(':checked')?'Y':'N',
     uomGroup:$('#f-uomGroup').val(),
     purUomId:pur.val(),purUomText:pur.text(),
     salUomId:sal.val(),salUomText:sal.text(),
@@ -1528,6 +1538,9 @@ function editCartItem(idx){
   $('#f-barcode').val(c.barcode||'');
   $('#f-tradeName').val(c.tradeName||'');
   $('#f-interface').val(c.interfaceStatus||'N');
+  $('#f-purchaseItem').prop('checked', (c.purchaseItem||'N')==='Y');
+  $('#f-salesItem').prop('checked', (c.salesItem||'N')==='Y');
+  $('#f-inventoryItem').prop('checked', (c.inventoryItem||'N')==='Y');
   $('#f-cgdCode').val(c.cgdCode||'').trigger('change');
   $('#f-uomGroup').val(c.uomGroup||'').trigger('change');
   $('#f-purUom').val(c.purUomId||'').trigger('change');
@@ -1585,7 +1598,7 @@ $('#btn-process').on('click',async function(){
         item_name:c.itemName,foreign_name:c.engName||c.itemName,
         english_name:c.engName||null,u_ntt_trade_name:c.tradeName||null,
         item_type:'I',items_group_code:c.itemGroup,items_group_text:c.itemGroupText,
-        purchase_item:'Y',sales_item:'N',inventory_item:'N',u_ntt_interface:c.interfaceStatus,
+        purchase_item:c.purchaseItem||'N',sales_item:c.salesItem||'N',inventory_item:c.inventoryItem||'N',u_ntt_interface:c.interfaceStatus,
         manage_serial_numbers:'N',manage_batch_numbers:'N',
         purchase_vat_group:c.vatGroup||'IEH07',sales_vat_group:'OEH00',wt_liable:'Y',
         uom_group_entry:c.uomGroup,
@@ -1678,6 +1691,9 @@ async function clearCreateForm(){
   $('#f-msType,#f-itemGroup,#f-uomGroup,#f-purUom,#f-salUom,#f-invUom,#f-dfltWh,#f-cgdCode').val('').trigger('change');
   $('#f-itemName,#f-engName,#f-oldCode,#f-refNo,#f-barcode,#f-tradeName,#f-vatGroup').val('');
   $('#f-interface').val('N');
+  $('#f-purchaseItem').prop('checked',true);
+  $('#f-salesItem').prop('checked',false);
+  $('#f-inventoryItem').prop('checked',false);
   $('#f-issueMethod').val('B');
   $('#f-priceType').val('consignment');
   $('#f-cost').val('1000');
@@ -1736,6 +1752,9 @@ function duplicateItem(idx){
   $('#f-barcode').val(it.u_ntt_barcode||'');
   $('#f-tradeName').val(it.u_ntt_trade_name||'');
   $('#f-interface').val(it.u_ntt_interface||'N');
+  $('#f-purchaseItem').prop('checked', (it.purchase_item||'N')==='Y');
+  $('#f-salesItem').prop('checked', (it.sales_item||'N')==='Y');
+  $('#f-inventoryItem').prop('checked', (it.inventory_item||'N')==='Y');
   if(it.u_ntt_cgd_code) $('#f-cgdCode').val(it.u_ntt_cgd_code).trigger('change');
   if(it.inventory_uom_entry) $('#f-invUom').val(String(it.inventory_uom_entry)).trigger('change');
   if(it.default_warehouse) $('#f-dfltWh').val(it.default_warehouse).trigger('change');
@@ -2302,7 +2321,7 @@ async function exportCSV(mode){
         r.item_name,r.english_name||r.item_name,
         r.u_ntt_trade_name||'',r.u_ntt_alias_name||'',
         r.item_type||'I',r.items_group_code||'',
-        r.purchase_item||'Y',r.sales_item||'N',r.inventory_item||'N',
+        r.purchase_item||'N',r.sales_item||'N',r.inventory_item||'N',
         r.u_ntt_interface||'N',
         r.manage_serial_numbers||'N',r.manage_batch_numbers||'N',
         r.main_supplier||'',r.supplier_catalog_no||'',
