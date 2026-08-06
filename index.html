@@ -2292,8 +2292,8 @@ async function exportCSV(mode){
     if(!rows.length)return Swal.fire('แจ้งเตือน','ไม่พบข้อมูลในเงื่อนไขที่ระบุ','info');
 
     // [2] ตัด U_NTT_RefNo และ U_NTT_Barcode ออก; GLMethod ใช้ getGLMethod()
-    const h1=["ItemCode","U_NTT_OldCode","ItemName","ForeignName","U_NTT_TradeName","U_NTT_AliasName","ItemType","ItemsGroupCode","PurchaseItem","SalesItem","InventoryItem","U_NTT_Interface","ManageSerialNumbers","ManageBatchNumbers","Mainsupplier","SupplierCatalogNo","PurchaseVATGroup","SalesVATGroup","WTLiable","UoMGroupEntry","PurchaseUnit","DefaultPurchasingUoMEntry","SalesUnit","DefaultSalesUoMEntry","InventoryUOM","InventoryUoMEntry","DefaultCountingUoMEntry","GLMethod","CostAccountingMethod","DefaultWarehouse","ManageStockByWarehouse","PlanningSystem","ProcurementMethod","IssueMethod","U_NTT_MSType","U_NTT_AssetPur"];
-    const h2=["ItemCode","U_NTT_OldCode","ItemName","FrgnName","U_NTT_TradeName","U_NTT_AliasName","ItemType","ItmsGrpCod","PrchseItem","SellItem","InvntItem","U_NTT_Interface","ManSerNum","ManBtchNum","CardCode","SuppCatNum","VatGroupPu","VatGourpSa","WTLiable","UoMGroupEntry","BuyUnitMsr","DefaultPurchasingUoMEntry","SalUnitMsr","DefaultSalesUoMEntry","InvntryUom","InventoryUoMEntry","DefaultCountingUoMEntry","GLMethod","EvalSystem","DfltWH","ByWh","PlaningSys","PrcrmntMtd","IssueMthd","U_NTT_MSType","U_NTT_AssetPur"];
+    const h1=["ItemCode","U_NTT_OldCode","ItemName","ForeignName","U_NTT_TradeName","U_NTT_AliasName","ItemType","ItemsGroupCode","PurchaseItem","SalesItem","InventoryItem","U_NTT_Interface","ManageSerialNumbers","ManageBatchNumbers","Mainsupplier","SupplierCatalogNo","PurchaseVATGroup","SalesVATGroup","WTLiable","UoMGroupEntry","PurchaseUnit","DefaultPurchasingUoMEntry","SalesUnit","DefaultSalesUoMEntry","InventoryUOM","InventoryUoMEntry","DefaultCountingUoMEntry","GLMethod","CostAccountingMethod","DefaultWarehouse","ManageStockByWarehouse","MinInventory","MaxInventory","PlanningSystem","ProcurementMethod","IssueMethod","LeadTime","MinOrderQuantity","ShippingType","U_NTT_ItemType","U_NTT_StockGP","U_NTT_MonthEXP","U_NTT_MSType","U_NTT_AssetPur"];
+    const h2=["ItemCode","U_NTT_OldCode","ItemName","FrgnName","U_NTT_TradeName","U_NTT_AliasName","ItemType","ItmsGrpCod","PrchseItem","SellItem","InvntItem","U_NTT_Interface","ManSerNum","ManBtchNum","CardCode","SuppCatNum","VatGroupPu","VatGourpSa","WTLiable","UoMGroupEntry","BuyUnitMsr","DefaultPurchasingUoMEntry","SalUnitMsr","DefaultSalesUoMEntry","InvntryUom","InventoryUoMEntry","DefaultCountingUoMEntry","GLMethod","EvalSystem","DfltWH","ByWh","MinLevel","MaxLevel","PlaningSys","PrcrmntMtd","IssueMthd","LeadTime","MinOrdrQty","ShipType","U_NTT_ItemType","U_NTT_StockGP","U_NTT_MonthEXP","U_NTT_MSType","U_NTT_AssetPur"];
     const dr=rows.map(r=>{
       const msCode = r.u_ntt_ms_type || r.u_ntt_asset_pur || '';
       const glMethod = r.gl_method || getGLMethod(msCode);
@@ -2315,8 +2315,12 @@ async function exportCSV(mode){
         glMethod,
         r.cost_accounting_method||'F',
         r.default_warehouse||'DS2',
-        r.manage_stock_by_warehouse||'N',r.planning_system||'N',
+        r.manage_stock_by_warehouse||'N',
+        r.min_level??'',r.max_level??'',
+        r.planning_system||'N',
         r.procurement_method||'B',r.issue_method||'B',
+        r.lead_time??'',r.min_ordr_qty??'',r.ship_type||'',
+        r.u_ntt_item_type||'',r.u_ntt_stock_gp||'',r.u_ntt_month_exp??'',
         r.u_ntt_ms_type||'',r.u_ntt_asset_pur||''
       ];
     });
