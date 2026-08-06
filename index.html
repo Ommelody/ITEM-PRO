@@ -1856,6 +1856,12 @@ function openItemDetail(idx){
         <tr style="background:var(--s0)"><td style="padding:5px 8px;color:var(--s5)">กลุ่มบัญชี</td><td style="padding:5px 8px">${getGroupName(it.items_group_code)}</td></tr>
         <tr><td style="padding:5px 8px;color:var(--s5)">MSType</td><td style="padding:5px 8px">${getMsName(it.u_ntt_ms_type || it.u_ntt_asset_pur)}</td></tr>
         <tr style="background:var(--s0)"><td style="padding:5px 8px;color:var(--s5)">Interface</td><td style="padding:5px 8px">${it.u_ntt_interface||'N'}</td></tr>
+        <tr><td style="padding:5px 8px;color:var(--s5)">ประเภทรายการ</td><td style="padding:5px 8px">
+          <span style="display:inline-flex;gap:10px;flex-wrap:wrap">
+            <span>${(it.purchase_item||'N')==='Y'?'☑':'☐'} PurchaseItem <b>${it.purchase_item||'N'}</b></span>
+            <span>${(it.sales_item||'N')==='Y'?'☑':'☐'} SalesItem <b>${it.sales_item||'N'}</b></span>
+            <span>${(it.inventory_item||'N')==='Y'?'☑':'☐'} InventoryItem <b>${it.inventory_item||'N'}</b></span>
+          </span></td></tr>
       </table>
       <table style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:14px">
         <tr><td style="padding:5px 8px;color:var(--s5)">หน่วยคลัง</td><td style="padding:5px 8px">${it.inventory_uom||it.sys_uom_name||'–'}</td></tr>
@@ -1899,6 +1905,13 @@ function openItemDetail(idx){
         <div class="fg"><label>หน่วยคลัง</label><select id="e-uom"><option value="">-- ไม่ระบุ --</option>${uomOpts}</select></div>
         <div class="fg"><label>VAT Group</label><input id="e-vat" value="${escHtml(it.purchase_vat_group)}"></div>
         <div class="fg"><label>Interface</label><select id="e-interface"><option value="N" ${it.u_ntt_interface==='N'?'selected':''}>N</option><option value="Y" ${it.u_ntt_interface==='Y'?'selected':''}>Y</option></select></div>
+        <div class="fg s2"><label>ประเภทรายการ (Y = ติ๊ก / N = ไม่ติ๊ก)</label>
+          <div style="display:flex;gap:16px;align-items:center;padding:8px 12px;border:1px solid var(--s2);border-radius:var(--rad);background:#fff;min-height:38px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;margin:0"><input type="checkbox" id="e-purchaseItem" ${(it.purchase_item||'N')==='Y'?'checked':''} style="width:auto;margin:0"> PurchaseItem</label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;margin:0"><input type="checkbox" id="e-salesItem" ${(it.sales_item||'N')==='Y'?'checked':''} style="width:auto;margin:0"> SalesItem</label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;margin:0"><input type="checkbox" id="e-inventoryItem" ${(it.inventory_item||'N')==='Y'?'checked':''} style="width:auto;margin:0"> InventoryItem</label>
+          </div>
+        </div>
         <div class="fg"><label>ราคาทุน</label><input type="number" id="e-cost" value="${it.sys_cost||0}"></div>
         <div class="fg"><label>ราคาขาย</label><input type="number" id="e-sell" value="${it.sys_price||0}"></div>
         <div class="fg"><label>สถานะ (การอนุมัติ)</label><select id="e-status"><option value="pending" ${it.status==='pending'?'selected':''}>⏳ รออนุมัติ</option><option value="approved" ${it.status==='approved'?'selected':''}>✅ อนุมัติแล้ว</option></select></div>
@@ -1949,6 +1962,9 @@ async function saveItemEditFull(code, btnEl) {
         sys_uom_name: uomRec ? uomRec.uom_code : null,
         purchase_vat_group: $('#e-vat').val() || null,
         u_ntt_interface: $('#e-interface').val(),
+        purchase_item: $('#e-purchaseItem').is(':checked')?'Y':'N',
+        sales_item: $('#e-salesItem').is(':checked')?'Y':'N',
+        inventory_item: $('#e-inventoryItem').is(':checked')?'Y':'N',
         sys_cost: parseFloat($('#e-cost').val()) || 0,
         sys_price: parseFloat($('#e-sell').val()) || 0,
         status: $('#e-status').val(),
