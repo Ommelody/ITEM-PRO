@@ -1110,7 +1110,7 @@ $('#login-form').on('submit',async function(e){
   Swal.fire({title:'กำลังตรวจสอบ...',didOpen:()=>Swal.showLoading()});
   try{
     const res=await DB.get('users',`username=eq.${encodeURIComponent(u)}&password=eq.${encodeURIComponent(p)}`);
-    if(res&&res.length>0){CU=res[0];Swal.close();await initApp();}
+    if(res&&res.length>0){CU=res[0];saveSession(CU);Swal.close();await initApp();}
     else Swal.fire('ผิดพลาด','ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง','error');
   }catch(e){Swal.fire('เชื่อมต่อไม่ได้',e.message,'error');}
 });
@@ -1128,6 +1128,36 @@ $('#reg-form').on('submit',async function(e){
     Swal.fire('ผิดพลาด',e.message.includes('23505')?'ชื่อผู้ใช้นี้มีอยู่แล้ว':e.message,'error');
   }
 });
+
+// ===================== SESSION (จำการล็อกอิน — รีเฟรชแล้วไม่ต้องล็อกอินใหม่) =====================
+const SESSION_KEY = 'imp_session';
+function saveSession(user){
+  // เก็บเฉพาะ username — ไม่บันทึกรหัสผ่านลงเครื่องผู้ใช้
+  try{ localStorage.setItem(SESSION_KEY, JSON.stringify({username:(user||{}).username})); }catch(e){}
+}
+function clearSession(){
+  try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
+}
+function loadSession(){
+  try{ const s = localStorage.getItem(SESSION_KEY); return s ? JSON.parse(s) : null; }catch(e){ return null; }
+}
+// กู้คืน session ตอนเปิดหน้า — ตรวจกับฐานข้อมูลซ้ำว่าผู้ใช้ยังมีอยู่จริงและสิทธิ์ยังเหมือนเดิม
+async function restoreSession(){
+  const s = loadSession();
+  if(!s || !s.username) return false;
+  try{
+    const res = await DB.get('users', `username=eq.${encodeURIComponent(s.username)}`);
+    if(res && res.length > 0){
+      CU = res[0];          // ใช้ข้อมูลล่าสุดจากฐานข้อมูล (สิทธิ์อาจถูกเปลี่ยนระหว่างทาง)
+      saveSession(CU);
+      await initApp();
+      return true;
+    }
+  }catch(e){ /* ต่อเน็ตไม่ได้ — ให้ล็อกอินใหม่ */ }
+  clearSession();
+  return false;
+}
+$(function(){ restoreSession(); });
 
 // ===================== ACTIVITY LOG VIEWER =====================
 PS.logs = { data: [] };
@@ -1175,7 +1205,7 @@ function exportLogsExcel(){
 }
 
 // ===================== ACTIVITY LOG VIEWER END =====================
-function logout(){if(typeof logAction==='function')logAction('logout', CU?CU.username:null,'auth');CU=null;$('#app-main').hide();$('#auth-screen').css('display','flex');}
+function logout(){if(typeof logAction==='function')logAction('logout', CU?CU.username:null,'auth');clearSession();CU=null;$('#app-main').hide();$('#auth-screen').css('display','flex');}
 
 // ===================== INIT =====================
 async function initApp(){
@@ -1188,6 +1218,11 @@ async function initApp(){
     $('.admin-only').show();
     $('#th-del-job').show();
     $('#btn-bulk-delete-jobs').show();
+  } else {
+    // [staff/viewer] ปิดเมนูจัดการระบบทั้งหมด (กันค้างจาก session ก่อนหน้าที่เป็น admin)
+    $('.admin-only').hide();
+    $('#th-del-job').hide();
+    $('#btn-bulk-delete-jobs').hide();
   }
   // [viewer] สิทธิ์อ่านอย่างเดียว — ค้นหาพัสดุได้เท่านั้น
   if(CU.role==='viewer'){
