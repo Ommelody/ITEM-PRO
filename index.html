@@ -50,6 +50,8 @@ body{font-family:'IBM Plex Sans Thai',sans-serif;background:var(--s1);color:var(
 .nav-item.active{background:var(--g7);color:#fff}
 .nav-item svg{width:15px;height:15px;flex-shrink:0;stroke-width:1.8}
 .admin-only{display:none}
+.viewer-hide{}
+body.role-viewer .viewer-hide{display:none!important}
 .sidebar-foot{margin-top:auto;padding:14px;border-top:1px solid rgba(255,255,255,.07)}
 .user-info-side{font-size:11px;color:rgba(255,255,255,.5);margin-bottom:8px}
 .user-info-side strong{display:block;color:rgba(255,255,255,.85);font-size:12px}
@@ -494,7 +496,7 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
     <div class="page" id="page-search">
       <div class="card">
         <div class="card-header"><h3>ค้นหารหัสสินค้า / จัดการสถานะ</h3>
-          <button class="btn btn-success btn-sm" onclick="exportSearchExcel()">⬇ Export Excel (ตามที่กรอง)</button>
+          <button class="btn btn-success btn-sm viewer-hide" onclick="exportSearchExcel()">⬇ Export Excel (ตามที่กรอง)</button>
         </div>
         <div class="card-body">
           <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
@@ -1187,6 +1189,15 @@ async function initApp(){
     $('#th-del-job').show();
     $('#btn-bulk-delete-jobs').show();
   }
+  // [viewer] สิทธิ์อ่านอย่างเดียว — ค้นหาพัสดุได้เท่านั้น
+  if(CU.role==='viewer'){
+    $('body').addClass('role-viewer');
+    $('.nav-item[data-page="page-create"],.nav-item[data-page="page-history"],.nav-item[data-page="page-export"]').hide();
+    $('.bn-item[data-page="page-create"],.bn-item[data-page="page-history"],.bn-item[data-page="page-export"]').hide();
+    switchPage('page-search');
+  } else {
+    $('body').removeClass('role-viewer');
+  }
   await loadMasterData();
   initSelect2();
   loadPriceRulesFromStorage();
@@ -1877,7 +1888,7 @@ function openItemDetail(idx){
 
     <div style="display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--s1);flex-wrap:wrap">
       ${isAdmin?`<button class="btn btn-warning" style="flex:1;min-width:150px;background:var(--a0);color:var(--a6);border:1px solid var(--a1)" onclick="$('#view-mode').hide();$('#edit-mode').show();">✏️ แก้ไขข้อมูลทั้งหมด</button>`:''}
-      <button class="btn btn-secondary" style="background:var(--b0);color:var(--b6);border:1px solid var(--b1)" onclick="duplicateItem(${idx})">⧉ Duplicate (ออกรหัสใหม่จากตัวนี้)</button>
+      <button class="btn btn-secondary viewer-hide" style="background:var(--b0);color:var(--b6);border:1px solid var(--b1)" onclick="duplicateItem(${idx})">⧉ Duplicate (ออกรหัสใหม่จากตัวนี้)</button>
       <button class="btn btn-secondary" onclick="printJobSingle('${it.doc_num||''}','${sCode}')">🖨️ พิมพ์เอกสาร</button>
       ${isAdmin?`<button class="btn btn-danger" onclick="deleteItem('${sCode}')">🗑️ ลบพัสดุ</button>`:''}
     </div>
@@ -2230,9 +2241,13 @@ async function loadUsers(){
     $('#users-tbody').html(users.map(u=>`<tr>
       <td>${u.name}</td>
       <td class="mono">${u.username}</td>
-      <td><span class="badge ${u.role==='admin'?'bb':'bg'}">${u.role.toUpperCase()}</span></td>
+      <td><span class="badge ${u.role==='admin'?'bb':u.role==='viewer'?'ba':'bg'}">${u.role.toUpperCase()}</span></td>
       <td>${new Date(u.created_at).toLocaleDateString('th-TH')}</td>
-      <td><button class="btn btn-amber btn-xs" onclick="changeRole('${u.id}','${u.role==='admin'?'staff':'admin'}','${u.username}')">→ ${u.role==='admin'?'Staff':'Admin'}</button></td>
+      <td><select onchange="changeRole('${u.id}',this.value,'${u.username}')" style="padding:4px 8px;border:1px solid var(--s2);border-radius:6px;font-size:12px;font-family:inherit">
+        <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
+        <option value="staff" ${u.role==='staff'?'selected':''}>Staff</option>
+        <option value="viewer" ${u.role==='viewer'?'selected':''}>Viewer (อ่านอย่างเดียว)</option>
+      </select></td>
       <td><button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}','${u.username}')" ${u.username===CU.username?'disabled title=ไม่สามารถลบตัวเองได้':''}>ลบ</button></td>
     </tr>`).join(''));
   }catch(e){Swal.fire('Error',e.message,'error');}
