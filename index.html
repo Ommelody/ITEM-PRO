@@ -139,6 +139,18 @@ input[readonly],input[disabled]{background:var(--s0);color:var(--s5);cursor:defa
 .copy-ic:active{transform:scale(.9)}
 .copy-ic svg{width:12px;height:12px}
 .cart-btn-zone{text-align:right;margin-top:10px}
+/* [UI-A2] เงียบตอนพัก — เน้นเฉพาะตอนกดเพิ่ม */
+.kf-tag{float:right;font-size:10.5px;font-weight:500;color:var(--s4);background:var(--s0);border:1px solid var(--s2);padding:1px 8px;border-radius:20px}
+.kf-tag.ok{color:#15803d;background:#f0fdf4;border-color:#bbf7d0;font-weight:600}
+.kf-hint{font-size:11px;color:var(--s4);margin-top:4px}
+/* สถานะ error — ปรากฏเมื่อกดเพิ่มแล้วยังไม่ครบเท่านั้น */
+.fg.err>label{color:#b91c1c;font-weight:600}
+.fg.err>select,.fg.err>input{border:1.5px solid #dc2626!important}
+.fg.err .select2-selection{border:1.5px solid #dc2626!important}
+.fg-err-msg{font-size:11px;color:#b91c1c;margin-top:4px;display:none}
+.fg.err .fg-err-msg{display:block}
+#form-error-summary{display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:9px;padding:10px 14px;margin-bottom:14px;align-items:center;gap:10px;font-size:12.5px;color:#991b1b}
+#form-error-summary.show{display:flex}
 
 /* ===== COLLAPSIBLE SIDEBAR ===== */
 .sidebar{
@@ -394,39 +406,49 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
       <div class="card">
         <div class="card-header"><h3>เพิ่มรายการสินค้าในใบงาน</h3></div>
         <div class="card-body">
+          <div id="form-error-summary">
+            <span style="color:#dc2626;font-size:14px">⚠</span>
+            <span>ยังกรอกไม่ครบ <b id="fes-count">0</b> ช่อง — <a href="#" id="fes-jump" style="color:#dc2626;font-weight:600;text-decoration:underline">ไปที่ช่องแรก</a></span>
+          </div>
           <form id="itemForm" autocomplete="off">
             <p class="sec-divider" style="margin-top:0;padding-top:0;border-top:none">1 — ข้อมูลทั่วไป</p>
             <div class="g4">
-              <div class="fg s2"><label>กลุ่ม MSType <span class="req">*</span></label><select id="f-msType" class="sel2" required><option value="">— ค้นหากลุ่ม —</option></select></div>
-              <div class="fg s2"><label>Items Group (บัญชี) <span class="req">*</span></label><select id="f-itemGroup" class="sel2" required><option value="">— ค้นหาบัญชี —</option></select></div>
-              <div class="fg s2"><label>ชื่อสินค้า (ไทย) <span class="req">*</span></label><input id="f-itemName" required placeholder="ชื่อพัสดุภาษาไทย"></div>
+              <div class="fg s2" data-req="1" data-label="กลุ่ม MSType"><label>กลุ่ม MSType <span class="req">*</span></label><select id="f-msType" class="sel2" required><option value="">— ค้นหากลุ่ม —</option></select><div class="fg-err-msg">กรุณาเลือกกลุ่ม MSType</div></div>
+              <div class="fg s2" data-req="1" data-label="Items Group"><label>Items Group (บัญชี) <span class="req">*</span></label><select id="f-itemGroup" class="sel2" required><option value="">— ค้นหาบัญชี —</option></select><div class="fg-err-msg">กรุณาเลือกกลุ่มบัญชี</div></div>
+              <div class="fg s2" data-req="1" data-label="ชื่อสินค้า (ไทย)"><label>ชื่อสินค้า (ไทย) <span class="req">*</span></label><input id="f-itemName" required placeholder="ชื่อพัสดุภาษาไทย"><div class="fg-err-msg">กรุณากรอกชื่อสินค้า</div></div>
               <div class="fg s2"><label>ชื่อสินค้า (English)</label><input id="f-engName" placeholder="Item name in English"></div>
               <div class="fg"><label>รหัสเดิม</label><input id="f-oldCode" placeholder="ถ้ามี"></div>
               <div class="fg"><label>Ref.No <span style="font-size:10px;color:var(--s4)">(อ้างอิง)</span></label><input id="f-refNo" placeholder="เลขอ้างอิง / เลขที่เอกสาร"></div>
               <div class="fg s2"><label>Barcode <span style="font-size:10px;color:var(--s4)">(ถ้ามี)</span></label><input id="f-barcode" class="barcode-input" placeholder="สแกนหรือพิมพ์บาร์โค้ด" autocomplete="off"></div>
               <div class="fg"><label>ชื่อการค้า</label><input id="f-tradeName"></div>
-              <div class="fg"><label>Interface</label><select id="f-interface"><option value="N">N</option><option value="Y">Y</option></select></div>
-              <div class="fg s2"><label>ประเภทรายการ (Y = ติ๊ก / N = ไม่ติ๊ก)</label>
-                <div style="display:flex;gap:16px;align-items:center;padding:8px 12px;border:1px solid var(--s2);border-radius:var(--rad);background:#fff;min-height:38px">
+              <div class="fg"><label>VAT Group (Auto)</label><input id="f-vatGroup" readonly placeholder="จับคู่อัตโนมัติ"></div>
+              <div class="fg s2" data-req="1" data-label="รหัสกรมบัญชีกลาง"><label>รหัสเบิกกรมบัญชีกลาง <span class="req">*</span></label><select id="f-cgdCode" class="sel2"><option value="">— ค้นหารหัสกรมบัญชี —</option></select><div class="fg-err-msg">กรุณาเลือกรหัสกรมบัญชีกลาง</div></div>
+            </div>
+            <p class="sec-divider">2 — หน่วยนับและคลัง</p>
+            <div class="g4">
+              <div class="fg" data-req="1" data-label="UoM Group"><label>UoM Group <span class="req">*</span></label><select id="f-uomGroup" class="sel2" required><option value="">— เลือก —</option></select><div class="fg-err-msg">กรุณาเลือก UoM Group</div></div>
+              <div class="fg" data-req="1" data-label="หน่วยซื้อ"><label>หน่วยซื้อ <span class="req">*</span></label><select id="f-purUom" class="sel2" required><option value="">— เลือก —</option></select><div class="fg-err-msg">กรุณาเลือกหน่วยซื้อ</div></div>
+              <div class="fg" data-req="1" data-label="หน่วยขาย"><label>หน่วยขาย <span class="req">*</span></label><select id="f-salUom" class="sel2" required><option value="">— เลือก —</option></select><div class="fg-err-msg">กรุณาเลือกหน่วยขาย</div></div>
+              <div class="fg" data-req="1" data-label="หน่วยคลัง"><label>หน่วยคลัง <span class="req">*</span></label><select id="f-invUom" class="sel2" required><option value="">— เลือก —</option></select><div class="fg-err-msg">กรุณาเลือกหน่วยคลัง</div></div>
+            </div>
+
+            <p class="sec-divider">3 — ค่าที่ต้องตรวจทุกครั้ง</p>
+            <div class="g2">
+              <div class="fg" data-req="1" data-label="Interface"><label>Interface <span class="req">*</span><span class="kf-tag" id="tag-interface">ต้องเลือก</span></label>
+                <select id="f-interface" required><option value="">— เลือก —</option><option value="N">N — ไม่ส่ง</option><option value="Y">Y — ส่ง HIS</option></select>
+                <div class="fg-err-msg">ต้องเลือก N หรือ Y</div>
+              </div>
+              <div class="fg"><label>ประเภทรายการ <span style="font-size:10px;color:var(--s4)">(ติ๊ก = Y)</span><span class="kf-tag" id="tag-itemtype">ค่าเริ่มต้น</span></label>
+                <div style="display:flex;gap:16px;align-items:center;padding:8px 12px;border:1px solid var(--s2);border-radius:var(--rad);background:#fff;min-height:38px;flex-wrap:wrap">
                   <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;margin:0"><input type="checkbox" id="f-purchaseItem" checked style="width:auto;margin:0"> PurchaseItem</label>
                   <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;margin:0"><input type="checkbox" id="f-salesItem" style="width:auto;margin:0"> SalesItem</label>
                   <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;margin:0"><input type="checkbox" id="f-inventoryItem" style="width:auto;margin:0"> InventoryItem</label>
                 </div>
               </div>
-              <div class="fg"><label>VAT Group (Auto)</label><input id="f-vatGroup" readonly placeholder="จับคู่อัตโนมัติ"></div>
-              <!-- [1] รหัสเบิกกรมบัญชีกลาง - dropdown from DB -->
-              <div class="fg s2"><label>รหัสเบิกกรมบัญชีกลาง <span style="font-size:10px;color:var(--s4)">(CGD Code)</span></label><select id="f-cgdCode" class="sel2"><option value="">— ค้นหารหัสกรมบัญชี —</option></select></div>
+              <div class="fg"><label>Issue Method<span class="kf-tag" id="tag-issue">ค่าเริ่มต้น</span></label><select id="f-issueMethod"><option value="B">B - Backflush</option><option value="M">M - Manual</option></select></div>
+              <div class="fg" data-req="1" data-label="คลัง Default"><label>คลัง Default <span class="req">*</span><span class="kf-tag" id="tag-wh">ค่าเริ่มต้น</span></label><select id="f-dfltWh" class="sel2" required><option value="">— เลือกคลัง —</option></select><div class="fg-err-msg">กรุณาเลือกคลัง</div></div>
             </div>
-            <p class="sec-divider">2 — หน่วยนับและคลัง</p>
-            <div class="g4">
-              <div class="fg"><label>UoM Group <span class="req">*</span></label><select id="f-uomGroup" class="sel2" required><option value="">— เลือก —</option></select></div>
-              <div class="fg"><label>หน่วยซื้อ <span class="req">*</span></label><select id="f-purUom" class="sel2" required><option value="">— เลือก —</option></select></div>
-              <div class="fg"><label>หน่วยขาย <span class="req">*</span></label><select id="f-salUom" class="sel2" required><option value="">— เลือก —</option></select></div>
-              <div class="fg"><label>หน่วยคลัง <span class="req">*</span></label><select id="f-invUom" class="sel2" required><option value="">— เลือก —</option></select></div>
-              <div class="fg"><label>Issue Method</label><select id="f-issueMethod"><option value="B">B - Backflush</option><option value="M">M - Manual</option></select></div>
-              <div class="fg"><label>คลัง Default</label><select id="f-dfltWh" class="sel2" required><option value="">— เลือกคลัง —</option></select></div>
-            </div>
-            <p class="sec-divider">3 — คำนวณราคา</p>
+            <p class="sec-divider">4 — คำนวณราคา</p>
 
             <div id="no-price-zone" style="display:none;background:var(--a0);border:1px solid var(--a1);border-radius:var(--rad);padding:14px 18px;margin-bottom:10px">
               <span style="font-size:13px;color:var(--a6);font-weight:600">ℹ️ MSType นี้ (กลุ่ม 7x/8x) — กรอกเฉพาะ <u>ราคาทุน</u> ไม่คำนวณราคาขาย (ระบบบันทึกราคาขาย = 0)</span>
@@ -1078,6 +1100,78 @@ async function sendCodeBackToBR(item){
   checkBRRequests();
 }
 
+// ===================== [UI-A2] QUIET VALIDATION =====================
+// เงียบตอนพัก — ไม่เน้นสีใด ๆ จนกว่าผู้ใช้กด "เพิ่มลงตะกร้า" แล้วยังไม่ครบ
+const TOUCH_FIELDS = {
+  itemtype: {label:'ประเภทรายการ', tag:'#tag-itemtype'},
+  issue:    {label:'Issue Method', tag:'#tag-issue'},
+  wh:       {label:'คลัง Default', tag:'#tag-wh'}
+};
+let TOUCHED = {};
+
+function markTouched(key){ TOUCHED[key]=true; updateKeyTags(); }
+function resetTouched(){ TOUCHED={}; clearErrors(); updateKeyTags(); }
+
+// ป้ายเทาเล็กข้างชื่อช่อง → เขียว ✓ เมื่อยืนยันแล้ว
+function updateKeyTags(){
+  Object.keys(TOUCH_FIELDS).forEach(k=>{
+    const $t=$(TOUCH_FIELDS[k].tag);
+    if(TOUCHED[k]) $t.addClass('ok').text('✓ ยืนยันแล้ว');
+    else $t.removeClass('ok').text('ค่าเริ่มต้น');
+  });
+  const iv=$('#f-interface').val()||'';
+  const $ti=$('#tag-interface');
+  if(iv) $ti.addClass('ok').text('✓ เลือกแล้ว'); else $ti.removeClass('ok').text('ต้องเลือก');
+}
+
+function collectUnconfirmed(){
+  return Object.keys(TOUCH_FIELDS).filter(k=>!TOUCHED[k]).map(k=>TOUCH_FIELDS[k].label);
+}
+
+function clearErrors(){
+  $('#itemForm .fg').removeClass('err');
+  $('#form-error-summary').removeClass('show');
+}
+
+// ตรวจช่องที่จำเป็น — เรียกเฉพาะตอนกดเพิ่ม
+function validateRequired(){
+  const missing=[];
+  $('#itemForm .fg[data-req]').each(function(){
+    const $fg=$(this), $ctl=$fg.find('select,input').first();
+    const v=($ctl.val()||'').toString().trim();
+    if(!v){ $fg.addClass('err'); missing.push({label:$fg.data('label'), el:$ctl}); }
+    else $fg.removeClass('err');
+  });
+  if(missing.length){
+    $('#fes-count').text(missing.length);
+    $('#form-error-summary').addClass('show');
+    $('#fes-jump').off('click').on('click',function(e){
+      e.preventDefault();
+      const el=missing[0].el;
+      if(el.hasClass('sel2')) el.select2('open'); else el.trigger('focus');
+    });
+  } else $('#form-error-summary').removeClass('show');
+  return missing;
+}
+
+$(function(){
+  // ล้างกรอบแดงทันทีที่ผู้ใช้เริ่มแก้ช่องนั้น
+  $(document).on('input change','#itemForm input,#itemForm select',function(){
+    $(this).closest('.fg').removeClass('err');
+    if(!$('#itemForm .fg.err').length) $('#form-error-summary').removeClass('show');
+  });
+  $(document).on('change','#f-interface', updateKeyTags);
+  // นับเฉพาะ event ที่มาจากผู้ใช้จริง — กัน .trigger('change') จากตอนโหลดข้อมูลหลัก
+  const userOnly = (key)=>function(ev){ if(ev.isTrigger===undefined) markTouched(key); };
+  $(document).on('change','#f-purchaseItem,#f-salesItem,#f-inventoryItem', userOnly('itemtype'));
+  $(document).on('change','#f-issueMethod', userOnly('issue'));
+  $(document).on('change','#f-dfltWh', userOnly('wh'));
+  $(document).on('select2:select','#f-dfltWh',()=>markTouched('wh'));
+  setTimeout(updateKeyTags, 900);
+});
+
+// ===================== MOBILE APP / PWA =====================
+
 // ===================== MOBILE APP / PWA =====================
 function toggleMobileSidebar(){ document.body.classList.toggle('mb-open'); }
 function closeMobileSidebar(){ document.body.classList.remove('mb-open'); }
@@ -1512,8 +1606,27 @@ function calcPrice(){
 $('#f-cost,#f-priceType').on('input change',calcPrice);
 
 // ===================== CART =====================
-$('#itemForm').on('submit',function(e){
+$('#itemForm').on('submit',async function(e){
   e.preventDefault();
+  // [UI-A2] ตรวจช่องที่จำเป็นก่อน — เน้นสีเฉพาะช่องที่ขาดจริง
+  const missing = validateRequired();
+  if(missing.length){
+    const el=missing[0].el;
+    if(el.hasClass('sel2')) el.select2('open'); else el.trigger('focus');
+    return;
+  }
+  // เตือนก่อนถ้ามีค่าที่ยังไม่ยืนยัน
+  const unconf = collectUnconfirmed();
+  if(unconf.length){
+    const cf = await Swal.fire({
+      icon:'warning', title:'ยังมีค่าที่เป็นค่าเริ่มต้น',
+      html:`<div style="text-align:left;font-size:13px;line-height:1.8">ช่องเหล่านี้ยังไม่ได้ตรวจสอบ:<br>${unconf.map(x=>`• <b>${x}</b>`).join('<br>')}<br><span style="color:var(--s5);font-size:12px">ยืนยันว่าค่าเริ่มต้นถูกต้องหรือไม่</span></div>`,
+      showCancelButton:true, reverseButtons:true,
+      confirmButtonText:'ถูกต้อง — เพิ่มเลย', cancelButtonText:'กลับไปตรวจ',
+      confirmButtonColor:'#256e4e'
+    });
+    if(!cf.isConfirmed) return;
+  }
   const inv=$('#f-invUom option:selected'),pur=$('#f-purUom option:selected'),sal=$('#f-salUom option:selected');
   const msType = $('#f-msType').val()||'';
   const noPrice = msType.startsWith('7')||msType.startsWith('8');
@@ -1547,6 +1660,7 @@ $('#itemForm').on('submit',function(e){
     noPrice
   });
   renderCart();
+  resetTouched(); // [UI-A] เริ่มนับการยืนยันใหม่สำหรับรายการถัดไป
   PS.prActive = null; // เคลียร์การผูก PR request หลังเพิ่มลงตะกร้าแล้ว (ป้องกันผูกซ้ำกับรายการถัดไป)
   PS.brActive = null; // [BRPR] เคลียร์การผูก BR request เช่นกัน
   $('#f-itemName,#f-engName,#f-oldCode,#f-refNo,#f-barcode,#f-tradeName').val('');
@@ -1598,6 +1712,8 @@ function editCartItem(idx){
   $('#f-cost').val(c.costPrice||0);
   PS.prActive = c.prRequestId ? {id:c.prRequestId, pr_ref:c.prRef} : null;
   PS.brActive = c.brRequestId ? {id:c.brRequestId, br_id:c.brId} : null; // [BRPR]
+  TOUCHED={itemtype:true,issue:true,wh:true}; // ดึงจากรายการที่เคยกรอกไว้ — ถือว่ายืนยันแล้ว
+  updateKeyTags();
   calcPrice();
   window.scrollTo(0,0);
   Swal.fire({toast:true,position:'top-end',icon:'info',title:'นำรายการมาที่ฟอร์มแล้ว — แก้ไขแล้วกด "+ เพิ่มลงตะกร้า" อีกครั้ง',showConfirmButton:false,timer:2600});
@@ -1736,7 +1852,7 @@ async function clearCreateForm(){
   try{ document.getElementById('itemForm').reset(); }catch(e){}
   $('#f-msType,#f-itemGroup,#f-uomGroup,#f-purUom,#f-salUom,#f-invUom,#f-dfltWh,#f-cgdCode').val('').trigger('change');
   $('#f-itemName,#f-engName,#f-oldCode,#f-refNo,#f-barcode,#f-tradeName,#f-vatGroup').val('');
-  $('#f-interface').val('N');
+  $('#f-interface').val('');
   $('#f-purchaseItem').prop('checked',true);
   $('#f-salesItem').prop('checked',false);
   $('#f-inventoryItem').prop('checked',false);
@@ -1747,6 +1863,7 @@ async function clearCreateForm(){
   $('#price-calc-box').show();
   $('#sell-calc-zone').show();
   $('#pricetype-wrap').show();
+  resetTouched();
   calcPrice();
   Swal.fire({toast:true,position:'top-end',icon:'info',title:'ล้างข้อมูลฟอร์มแล้ว',showConfirmButton:false,timer:1300});
 }
@@ -1766,12 +1883,25 @@ async function clearSearch(){
   $('#search-pager').html('');
 }
 
-// [#3] คัดลอกข้อความไปยังคลิปบอร์ด พร้อม toast
-function copyText(text, label){
-  const done=()=>Swal.fire({toast:true,position:'top-end',icon:'success',title:`คัดลอก${label?label:''}แล้ว`,showConfirmButton:false,timer:1400});
+// [#3] คัดลอกข้อความไปยังคลิปบอร์ด — ไม่ปิดหน้าต่างรายละเอียด
+function copyText(text, label, ev){
+  if(ev){ ev.stopPropagation(); ev.preventDefault(); }
+  const btn = ev && ev.currentTarget ? ev.currentTarget : null;
+  const done=()=>{
+    // แสดงเครื่องหมายถูกต้องที่ตัวไอคอน แทน popup ที่ทำให้หน้าต่างปิด
+    if(btn){
+      const old = btn.innerHTML;
+      btn.innerHTML = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>';
+      btn.style.color = 'var(--g7)';
+      btn.style.borderColor = 'var(--g1)';
+      btn.style.background = 'var(--g0)';
+      setTimeout(()=>{ btn.innerHTML = old; btn.style.color=''; btn.style.borderColor=''; btn.style.background=''; }, 1200);
+    }
+  };
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
   }else fallbackCopy(text,done);
+  return false;
 }
 function fallbackCopy(text,cb){
   const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
@@ -1806,6 +1936,8 @@ function duplicateItem(idx){
   if(it.default_warehouse) $('#f-dfltWh').val(it.default_warehouse).trigger('change');
   if(it.purchase_vat_group) $('#f-vatGroup').val(it.purchase_vat_group);
   if(it.sys_cost!=null) $('#f-cost').val(it.sys_cost);
+  TOUCHED={itemtype:true,issue:true,wh:true};
+  updateKeyTags();
   calcPrice();
   window.scrollTo(0,0);
   Swal.fire({icon:'info',title:'คัดลอกข้อมูลมาแล้ว',html:'<div style="font-size:13px;line-height:1.6;text-align:left">ข้อมูลถูกคัดลอกมาที่หน้า <b>ออกรหัสพัสดุ</b> แล้ว<br>ตรวจสอบ/แก้ไขข้อมูลตามต้องการ แล้วกด <b>“+ เพิ่มลงตะกร้า”</b> เพื่อออกรหัสใหม่ในกลุ่มเดิม<br><span style="color:var(--s5);font-size:12px">* กรุณาเลือก UoM Group / หน่วยซื้อ / หน่วยขาย อีกครั้ง</span></div>',confirmButtonText:'เข้าใจแล้ว',confirmButtonColor:'#256e4e'});
@@ -1882,8 +2014,8 @@ function openItemDetail(idx){
     ${inactiveBanner}
     ${prBanner}
     <div style="background:${isInactive?'var(--r0)':'var(--g0)'};border:1px solid ${isInactive?'var(--r1)':'var(--g1)'};border-radius:var(--rad);padding:12px 14px;margin-bottom:14px">
-      <div style="font-size:20px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:${isInactive?'var(--r6)':'var(--g7)'};display:flex;align-items:center">${it.item_code}<span class="copy-ic" title="คัดลอกรหัส" onclick="copyText('${it.item_code}','รหัส')"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></span></div>
-      <div style="font-size:14px;font-weight:600;margin-top:3px;display:flex;align-items:flex-start"><span>${it.item_name}</span><span class="copy-ic" title="คัดลอกชื่อรายการ" onclick="copyText(${JSON.stringify(it.item_name||'')},'ชื่อรายการ')"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></span></div>
+      <div style="font-size:20px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:${isInactive?'var(--r6)':'var(--g7)'};display:flex;align-items:center">${it.item_code}<span class="copy-ic" title="คัดลอกรหัส" data-copy="${escHtml(it.item_code||'')}" onclick="return copyText(this.dataset.copy,'รหัส',event)"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></span></div>
+      <div style="font-size:14px;font-weight:600;margin-top:3px;display:flex;align-items:flex-start"><span>${it.item_name}</span><span class="copy-ic" title="คัดลอกชื่อรายการ" data-copy="${escHtml(it.item_name||'')}" onclick="return copyText(this.dataset.copy,'ชื่อรายการ',event)"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></span></div>
       ${it.english_name?`<div style="color:var(--s5);font-size:12px;margin-top:1px">${it.english_name}</div>`:''}
       <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
         <span class="badge ${it.status==='approved'?'bg':'ba'}" style="font-size:12px">${it.status==='approved'?'✅ อนุมัติแล้ว':'⏳ รออนุมัติ'}</span>
@@ -1918,6 +2050,7 @@ function openItemDetail(idx){
         <tr style="background:var(--s0)"><td style="padding:5px 8px;color:var(--s5)">ราคาขาย</td><td style="padding:5px 8px;font-weight:600;color:var(--r6);font-family:monospace">${it.sys_price!=null?Number(it.sys_price).toLocaleString('th-TH'):'–'} บาท</td></tr>
         <tr><td style="padding:5px 8px;color:var(--s5)">ผู้ขอออกรหัส</td><td style="padding:5px 8px">${it.creator_name||'–'}</td></tr>
         <tr style="background:var(--s0)"><td style="padding:5px 8px;color:var(--s5)">เลขที่ใบงาน</td><td style="padding:5px 8px;font-family:monospace">${it.doc_num||'–'}</td></tr>
+        <tr><td style="padding:5px 8px;color:var(--s5)">วันที่/เวลาที่ออกรหัส</td><td style="padding:5px 8px;font-size:12px">${it.created_at?new Date(it.created_at).toLocaleString('th-TH',{dateStyle:'long',timeStyle:'short'})+' น.':'–'}</td></tr>
       </table>
     </div>
 
