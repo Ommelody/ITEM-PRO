@@ -2594,15 +2594,46 @@ async function processExcelImport(type){
     try{
       if(type==='price'){
         let cnt=0;
-        for(const row of json){if(row.ItemCode){await DB.patch('items',`item_code=eq.${row.ItemCode}`,{sys_cost:row.Cost||0,sys_price:row.Sell||0});cnt++;}}
+        for(const row of json){if(row.ItemCode && (row.Cost===undefined||row.Cost===''||!isNaN(parseFloat(String(row.Cost).replace(/,/g,''))))){const c=parseFloat(String(row.Cost??'').replace(/,/g,''));const s=parseFloat(String(row.Sell??'').replace(/,/g,''));await DB.patch('items',`item_code=eq.${row.ItemCode}`,{sys_cost:isNaN(c)?0:c,sys_price:isNaN(s)?0:s});cnt++;}}
         Swal.fire('สำเร็จ',`อัปเดตราคา ${cnt} รายการ`,'success');
       }else{
         const docNum=`IMP-${new Date().toISOString().slice(2,10).replace(/-/g,'')}-${Math.floor(1000+Math.random()*9000)}`;
         await DB.post('job_orders',{doc_num:docNum,creator_name:CU.name,status:'completed',created_at:new Date().toISOString()});
         const runMap={},inserts=[];
+        // [import-fix] ตัดแถวตัวอย่าง/คำอธิบายของ template ออก (เช่นแถวที่ Cost = "ราคาทุน")
+        const isNum = v => v!==null && v!=='' && !isNaN(parseFloat(String(v).replace(/,/g,'')));
+        const toNum = v => isNum(v) ? parseFloat(String(v).replace(/,/g,'')) : 0;
+        const skipRow = (row) => {
+          const ms=String(row.MSType||'').trim();
+          if(!ms) return true;
+          if(!isNum(ms)) return true;                                  // หัวข้อ/คำอธิบาย — MSType ต้องเป็นเลข
+          if(row.Cost!==undefined && row.Cost!=='' && !isNum(row.Cost)) return true;  // Cost เป็นข้อความ เช่น "ราคาทุน"
+          if(row.Sell!==undefined && row.Sell!=='' && !isNum(row.Sell)) return true;
+          const nm=String(row.ItemName||'');
+          if(/ชื่อสินค้าภาษาไทย|ชื่อพัสดุภาษาไทย|จำเป็น/.test(nm)) return true; // แถวตัวอย่าง
+          return false;
+        };
+        // หา UoM จาก Abs Entry หรือชื่อหน่วย — รองรับทั้งไทย/อังกริษ ไม่สนตัวพิมพ์เล็ก/ใหญ่ และช่องว่างส่วนเกิน
+        const norm = s => String(s==null?'':s).trim().replace(/\s+/g,' ').toLowerCase();
+        const findUom = (v) => {
+          if(v===undefined||v===null||v==='') return null;
+          const s=String(v).trim(), k=norm(v);
+          return MD.uoms.find(u=>String(u.uom_abs_entry)===s)
+              || MD.uoms.find(u=>norm(u.uom_code)===k)
+              || null;
+        };
+        // หา UoM Group จาก Abs Entry หรือรหัสกลุ่ม (รองรับชื่อไทย เช่น "เส้น")
+        const findUomGroup = (v) => {
+          if(v===undefined||v===null||v==='') return null;
+          const s=String(v).trim(), k=norm(v);
+          const rec = MD.uomGroups.find(g=>String(g.uom_group_abs_entry)===s)
+                   || MD.uomGroups.find(g=>norm(g.uom_group_code)===k);
+          return rec ? String(rec.uom_group_abs_entry) : null;
+        };
+        let skipped=0, uomGrpUnmatched=[];
         for(const row of json){
-          const ms=String(row.MSType||'').trim();if(!ms)continue;
-          
+          if(skipRow(row)){ skipped++; continue; }
+          const ms=String(row.MSType||'').trim();
           if(runMap[ms] === undefined){
             const realData = await DB.get('items', `or=(u_ntt_ms_type.eq.${ms},u_ntt_asset_pur.eq.${ms})&order=item_code.desc&limit=1`);
             let realMax = 0;
@@ -2616,12 +2647,14 @@ async function processExcelImport(type){
           }
           runMap[ms]++;
 
-          const invUomEntry = row.InvUom ? String(row.InvUom) : null;
-          const purUomEntry = row.PurUom ? String(row.PurUom) : null;
-          const salUomEntry = row.SalUom ? String(row.SalUom) : null;
-          const invUomRec = invUomEntry ? MD.uoms.find(u=>String(u.uom_abs_entry)===invUomEntry) : null;
-          const purUomRec = purUomEntry ? MD.uoms.find(u=>String(u.uom_abs_entry)===purUomEntry) : null;
-          const salUomRec = salUomEntry ? MD.uoms.find(u=>String(u.uom_abs_entry)===salUomEntry) : null;
+          const invUomRec = findUom(row.InvUom);
+          const purUomRec = findUom(row.PurUom);
+          const salUomRec = findUom(row.SalUom);
+          const invUomEntry = invUomRec ? String(invUomRec.uom_abs_entry) : (isNum(row.InvUom)?String(row.InvUom):null);
+          const purUomEntry = purUomRec ? String(purUomRec.uom_abs_entry) : (isNum(row.PurUom)?String(row.PurUom):null);
+          const salUomEntry = salUomRec ? String(salUomRec.uom_abs_entry) : (isNum(row.SalUom)?String(row.SalUom):null);
+          const uomGrpEntry = findUomGroup(row.UoMGroup);
+          if(row.UoMGroup && !uomGrpEntry && !uomGrpUnmatched.includes(String(row.UoMGroup))) uomGrpUnmatched.push(String(row.UoMGroup));
           const grpRec = row.ItemGroup ? MD.itemGroups.find(g=>String(g.number)===String(row.ItemGroup)) : null;
 
           const rawVat = row.PurchaseVATGroup || row.PurchaseVatGroup || null;
@@ -2647,7 +2680,7 @@ async function processExcelImport(type){
             manage_serial_numbers:'N',manage_batch_numbers:'N',
             purchase_vat_group: rawVat || vatGrp,
             sales_vat_group:'OEH00',wt_liable:'Y',
-            uom_group_entry:row.UoMGroup?String(row.UoMGroup):null,
+            uom_group_entry: uomGrpEntry ? String(uomGrpEntry) : null,
             purchase_unit:purUomRec?purUomRec.uom_code:(row.PurUom||null),
             default_purchasing_uom_entry:purUomEntry,
             sales_unit:salUomRec?salUomRec.uom_code:(row.SalUom||null),
@@ -2663,8 +2696,8 @@ async function processExcelImport(type){
             issue_method:row.IssueMethod||'B',
             u_ntt_ms_type: ms.startsWith('8') ? null : ms,
             u_ntt_asset_pur: ms.startsWith('8') ? ms : null,
-            sys_cost:row.Cost||0,
-            sys_price:row.Sell||0,
+            sys_cost:toNum(row.Cost),
+            sys_price:toNum(row.Sell),
             sys_uom_name:invUomRec?invUomRec.uom_code:(row.InvUom||null),
             sys_group_name:grpRec?grpRec.group_name:(row.ItemGroup||null),
             creator_name:CU.name,status:'pending',
@@ -2672,10 +2705,14 @@ async function processExcelImport(type){
             created_at:new Date().toISOString()
           });
         }
+        if(!inserts.length){
+          return Swal.fire('ไม่มีข้อมูลที่นำเข้าได้','ตรวจสอบว่ากรอกคอลัมน์ MSType, ItemName และ Cost เป็นตัวเลขหรือไม่','warning');
+        }
         await DB.post('items',inserts);
         for(const[code,val]of Object.entries(runMap))await DB.patch('db_mstype',`group_code=eq.${code}`,{last_running_no:val});
         await loadMasterData();
-        Swal.fire('สำเร็จ',`นำเข้า ${inserts.length} รายการ (ใบงาน: ${docNum})`,'success');
+        if(typeof logAction==='function') logAction('import',{doc_num:docNum,count:inserts.length,skipped},'job',docNum);
+        Swal.fire({icon:'success',title:'สำเร็จ',html:`นำเข้า ${inserts.length} รายการ (ใบงาน: ${docNum})${skipped?`<br><span style="font-size:12px;color:#64748b">ข้ามแถวหัวข้อ/ตัวอย่าง ${skipped} แถว</span>`:''}${uomGrpUnmatched.length?`<br><span style="font-size:12px;color:#b45309">⚠ UoM Group ไม่ตรงกับข้อมูลหลัก: ${uomGrpUnmatched.join(', ')} — ช่อง UoMGroupEntry จะว่าง กรุณาแก้ไขรายการก่อน Export DTW</span>`:''}`});
       }
     }catch(err){Swal.fire('Error',err.message,'error');}
   };
