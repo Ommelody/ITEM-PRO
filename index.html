@@ -73,12 +73,13 @@ body.role-viewer .viewer-hide{display:none!important}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
 .s2{grid-column:span 2}
-input,select,textarea{width:100%;padding:7px 10px;border:1px solid var(--s2);border-radius:var(--rad);font-family:inherit;font-size:13px;color:var(--s9);outline:none;transition:.15s}
+input,select,textarea{width:100%;padding:8px 10px;min-height:36px;line-height:18px;border:1px solid var(--s2);border-radius:var(--rad);font-family:inherit;font-size:13px;color:var(--s9);outline:none;transition:.15s;box-sizing:border-box}
+select{height:36px}
 input:focus,select:focus{border-color:var(--g4);box-shadow:0 0 0 3px rgba(46,143,102,.1)}
 input[readonly],input[disabled]{background:var(--s0);color:var(--s5);cursor:default}
-.select2-container .select2-selection--single{height:34px;border-color:var(--s2);border-radius:var(--rad)}
-.select2-container--default .select2-selection--single .select2-selection__rendered{line-height:32px;font-size:13px;padding-left:10px;color:var(--s9)}
-.select2-container--default .select2-selection--single .select2-selection__arrow{height:32px}
+.select2-container .select2-selection--single{height:36px;border-color:var(--s2);border-radius:var(--rad)}
+.select2-container--default .select2-selection--single .select2-selection__rendered{line-height:34px;font-size:13px;padding-left:10px;color:var(--s9)}
+.select2-container--default .select2-selection--single .select2-selection__arrow{height:34px}
 .select2-container--default.select2-container--focus .select2-selection--single{border-color:var(--g4);box-shadow:0 0 0 3px rgba(46,143,102,.1)}
 .price-box{background:linear-gradient(135deg,var(--g0),#fff);border:1px solid var(--g1);border-radius:var(--radl);padding:18px;margin-top:4px}
 .price-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
@@ -86,9 +87,25 @@ input[readonly],input[disabled]{background:var(--s0);color:var(--s5);cursor:defa
 .pstat .pl{font-size:10px;font-weight:600;color:var(--s4);letter-spacing:.8px;text-transform:uppercase;margin-bottom:3px}
 .pstat .pv{font-size:18px;font-weight:600;color:var(--s8);font-family:'IBM Plex Mono',monospace}
 .pstat.sell .pv{color:var(--r6)}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 14px;border-radius:var(--rad);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:.15s;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:6px 12px;border-radius:var(--rad);font-family:inherit;font-size:12.5px;font-weight:500;cursor:pointer;border:none;transition:.15s;white-space:nowrap}
 .btn:active{transform:scale(.98)}
-.btn svg{width:14px;height:14px;stroke-width:2}
+.btn svg{width:13px;height:13px;stroke-width:2}
+.chip-row{display:flex;gap:7px;flex-wrap:wrap;padding:0;align-items:center;min-height:36px;align-self:flex-start}
+.chip-opt{padding:0 14px;min-height:36px;display:inline-flex;align-items:center;border-radius:20px;border:1px solid var(--s2);background:#fff;font-size:13px;font-weight:500;cursor:pointer;color:var(--s6);transition:.15s;font-family:inherit}
+.chip-opt:hover{background:var(--s1)}
+.chip-opt.active{background:var(--g6);color:#fff;border-color:var(--g6)}
+.chip-opt.chip-danger.active{background:var(--r6);border-color:var(--r6)}
+.chip-sw.chip-status{border-color:var(--a1);background:var(--a0);color:var(--a6)}
+.chip-sw.chip-status .sw{background:var(--a5)}
+.chip-status.on{border-color:var(--g5);background:var(--g0);color:var(--g7)}
+.chip-status.on .sw{background:var(--g6)}
+.chip-sw{display:inline-flex;align-items:center;gap:9px;padding:0 14px;min-height:36px;border-radius:24px;border:1px solid var(--s2);background:#fff;font-size:13px;font-weight:500;color:var(--s7);cursor:pointer;transition:.15s;user-select:none;font-family:inherit;align-self:flex-start;width:fit-content}
+.chip-sw:hover{background:var(--s1)}
+.chip-sw .sw{width:32px;height:18px;border-radius:20px;background:var(--s3);position:relative;transition:.2s;flex:none}
+.chip-sw .sw::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.chip-sw.on{border-color:var(--g5);background:var(--g0);color:var(--g7)}
+.chip-sw.on .sw{background:var(--g6)}
+.chip-sw.on .sw::after{left:16px}
 .btn-primary{background:var(--g6);color:#fff}.btn-primary:hover{background:var(--g7)}
 .btn-success{background:var(--g5);color:#fff}.btn-success:hover{background:var(--g6)}
 .btn-secondary{background:var(--s1);color:var(--s7);border:1px solid var(--s2)}.btn-secondary:hover{background:var(--s2)}
@@ -410,7 +427,7 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
             <span style="color:#dc2626;font-size:14px">⚠</span>
             <span>ยังกรอกไม่ครบ <b id="fes-count">0</b> ช่อง — <a href="#" id="fes-jump" style="color:#dc2626;font-weight:600;text-decoration:underline">ไปที่ช่องแรก</a></span>
           </div>
-          <form id="itemForm" autocomplete="off">
+          <form id="itemForm" autocomplete="off" novalidate>
             <p class="sec-divider" style="margin-top:0;padding-top:0;border-top:none">1 — ข้อมูลทั่วไป</p>
             <div class="g4">
               <div class="fg s2" data-req="1" data-label="กลุ่ม MSType"><label>กลุ่ม MSType <span class="req">*</span></label><select id="f-msType" class="sel2" required><option value="">— ค้นหากลุ่ม —</option></select><div class="fg-err-msg">กรุณาเลือกกลุ่ม MSType</div></div>
@@ -434,19 +451,20 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
 
             <p class="sec-divider">3 — ค่าที่ต้องตรวจทุกครั้ง</p>
             <div class="g2">
-              <div class="fg" data-req="1" data-label="Interface"><label>Interface <span class="req">*</span><span class="kf-tag" id="tag-interface">ต้องเลือก</span></label>
-                <select id="f-interface" required><option value="">— เลือก —</option><option value="N">N — ไม่ส่ง</option><option value="Y">Y — ส่ง HIS</option></select>
+              <div class="fg" data-req="1" data-label="Interface"><label>Interface <span class="req">*</span><span class="kf-tag" id="tag-interface">N — ไม่ส่ง</span></label>
+                <select id="f-interface" required style="display:none"><option value="N">N — ไม่ส่ง</option><option value="Y">Y — ส่ง HIS</option></select>
+                <button type="button" class="chip-sw" id="chip-f-interface"><span class="sw"></span><span class="lbl"></span></button>
                 <div class="fg-err-msg">ต้องเลือก N หรือ Y</div>
               </div>
               <div class="fg"><label>ประเภทรายการ <span style="font-size:10px;color:var(--s4)">(ติ๊ก = Y)</span><span class="kf-tag" id="tag-itemtype">ค่าเริ่มต้น</span></label>
-                <div style="display:flex;gap:16px;align-items:center;padding:8px 12px;border:1px solid var(--s2);border-radius:var(--rad);background:#fff;min-height:38px;flex-wrap:wrap">
-                  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;margin:0"><input type="checkbox" id="f-purchaseItem" checked style="width:auto;margin:0"> PurchaseItem</label>
-                  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;margin:0"><input type="checkbox" id="f-salesItem" style="width:auto;margin:0"> SalesItem</label>
-                  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;margin:0"><input type="checkbox" id="f-inventoryItem" style="width:auto;margin:0"> InventoryItem</label>
+                <div class="chip-row">
+                  <input type="checkbox" id="f-purchaseItem" checked style="display:none"><button type="button" class="chip-opt" id="chip-f-purchaseItem">PurchaseItem</button>
+                  <input type="checkbox" id="f-salesItem" style="display:none"><button type="button" class="chip-opt" id="chip-f-salesItem">SalesItem</button>
+                  <input type="checkbox" id="f-inventoryItem" style="display:none"><button type="button" class="chip-opt" id="chip-f-inventoryItem">InventoryItem</button>
                 </div>
               </div>
-              <div class="fg"><label>Issue Method<span class="kf-tag" id="tag-issue">ค่าเริ่มต้น</span></label><select id="f-issueMethod"><option value="B">B - Backflush</option><option value="M">M - Manual</option></select></div>
-              <div class="fg" data-req="1" data-label="คลัง Default"><label>คลัง Default <span class="req">*</span><span class="kf-tag" id="tag-wh">ค่าเริ่มต้น</span></label><select id="f-dfltWh" class="sel2" required><option value="">— เลือกคลัง —</option></select><div class="fg-err-msg">กรุณาเลือกคลัง</div></div>
+              <div class="fg"><label>Issue Method<span class="kf-tag" id="tag-issue">ค่าเริ่มต้น</span></label><select id="f-issueMethod" style="display:none"><option value="B">B - Backflush</option><option value="M">M - Manual</option></select><div class="chip-row" id="chip-issue"></div></div>
+              <div class="fg" data-req="1" data-label="คลัง Default"><label>คลัง Default <span class="req">*</span><span class="kf-tag" id="tag-wh">ค่าเริ่มต้น</span></label><select id="f-dfltWh" required style="display:none"><option value="">— เลือกคลัง —</option></select><div class="chip-row" id="chip-dfltWh"></div><div class="fg-err-msg">กรุณาเลือกคลัง</div></div>
             </div>
             <p class="sec-divider">4 — คำนวณราคา</p>
 
@@ -472,7 +490,7 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
 
             <div class="cart-btn-zone" style="display:flex;gap:8px;justify-content:flex-end">
               <button type="button" class="btn" style="background:var(--a6);color:#fff;border:1px solid var(--a6)" onclick="clearCreateForm()">✕ ล้างข้อมูล</button>
-              <button type="submit" class="btn btn-success">+ เพิ่มลงตะกร้า</button>
+              <button type="submit" class="btn btn-success btn-sm">+ เพิ่มลงตะกร้า</button>
             </div>
           </form>
         </div>
@@ -480,7 +498,7 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
       <div class="card">
         <div class="card-header">
           <h3>ตะกร้ารายการ (<span id="cart-count">0</span> รายการ)</h3>
-          <button class="btn btn-primary" id="btn-process">✔ ออกรหัสและบันทึก</button>
+          <button class="btn btn-primary btn-sm" id="btn-process">✔ ออกรหัสและบันทึก</button>
         </div>
         <p style="font-size:11px;color:var(--s4);padding:8px 18px 0">💡 คลิกที่แถวเพื่อแก้ไขรายการนั้นก่อนเพิ่มลงตะกร้าอีกครั้ง</p>
         <table class="dt">
@@ -540,8 +558,8 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
               <option value="false">🟢 Active</option>
               <option value="true">🔴 In-Active</option>
             </select>
-            <button class="btn btn-primary" onclick="doSearch()">ค้นหา</button>
-            <button class="btn" style="background:var(--a6);color:#fff;border:1px solid var(--a6)" onclick="clearSearch()">✕ ล้าง</button>
+            <button class="btn btn-primary btn-sm" onclick="doSearch()">ค้นหา</button>
+            <button class="btn btn-sm" style="background:var(--a6);color:#fff;border:1px solid var(--a6)" onclick="clearSearch()">✕ ล้าง</button>
           </div>
           <p style="font-size:11px;color:var(--s4);margin-bottom:12px">💡 คลิกที่แถวเพื่อดูรายละเอียดและแก้ไข &nbsp;|&nbsp; แถวสีแดง = In-Active</p>
           <div style="border:1px solid var(--s2);border-radius:var(--radl);overflow:hidden">
@@ -572,7 +590,7 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
             <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">
               <div class="fg" style="min-width:180px"><label>ตั้งแต่วันที่</label><input type="date" id="exp-start"></div>
               <div class="fg" style="min-width:180px"><label>ถึงวันที่</label><input type="date" id="exp-end"></div>
-              <button class="btn btn-primary" onclick="exportCSV('date')">⬇ ดาวน์โหลด CSV</button>
+              <button class="btn btn-primary btn-sm" style="min-height:36px" onclick="exportCSV('date')">⬇ ดาวน์โหลด CSV</button>
             </div>
           </div>
 
@@ -584,7 +602,7 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
                   <option value="">— กำลังโหลดรายการใบงาน... —</option>
                 </select>
               </div>
-              <button class="btn btn-primary" onclick="exportCSV('job')">⬇ ดาวน์โหลด CSV</button>
+              <button class="btn btn-primary btn-sm" style="min-height:36px" onclick="exportCSV('job')">⬇ ดาวน์โหลด CSV</button>
             </div>
             <p style="font-size:11px;color:var(--s4)">💡 เลือกใบงานที่ต้องการ Export แล้วกดดาวน์โหลด</p>
           </div>
@@ -593,7 +611,7 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
             <div style="background:var(--a0);border:1px solid var(--a1);border-radius:var(--rad);padding:12px 16px;margin-bottom:12px">
               <span style="font-size:13px;color:var(--a6)">⚠️ จะ Export ข้อมูลสินค้าทั้งหมดในระบบ</span>
             </div>
-            <button class="btn btn-primary" onclick="exportCSV('all')">⬇ ดาวน์โหลด CSV ทั้งหมด</button>
+            <button class="btn btn-primary btn-sm" onclick="exportCSV('all')">⬇ ดาวน์โหลด CSV ทั้งหมด</button>
           </div>
         </div>
       </div>
@@ -731,7 +749,7 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
 
           <button class="btn btn-outline btn-sm" onclick="downloadTemplate('item')" style="margin-bottom:12px">⬇ Template นำเข้าพัสดุ (.xlsx)</button><br>
           <input type="file" id="file-import-item" accept=".xlsx,.xls" style="margin-bottom:10px">
-          <button class="btn btn-primary" onclick="processExcelImport('item')">อัปโหลดและนำเข้า</button>
+          <button class="btn btn-primary btn-sm" onclick="processExcelImport('item')">อัปโหลดและนำเข้า</button>
         </div>
       </div>
       <div class="card">
@@ -739,7 +757,7 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
         <div class="card-body">
           <button class="btn btn-outline btn-sm" onclick="downloadTemplate('price')" style="margin-bottom:12px">⬇ Template อัปเดตราคา (.xlsx)</button><br>
           <input type="file" id="file-import-price" accept=".xlsx,.xls" style="margin-bottom:10px">
-          <button class="btn btn-success" onclick="processExcelImport('price')">อัปโหลดและอัปเดตราคา</button>
+          <button class="btn btn-success btn-sm" onclick="processExcelImport('price')">อัปโหลดและอัปเดตราคา</button>
         </div>
       </div>
     </div>
@@ -774,8 +792,8 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
             <div class="fg"><label>ผู้ใช้ / คำค้น</label><input type="text" id="log-search" placeholder="ชื่อ/username/รายละเอียด"></div>
           </div>
           <div style="display:flex;gap:8px;margin-top:12px">
-            <button class="btn btn-primary" onclick="loadLogs()">ค้นหา</button>
-            <button class="btn" style="background:var(--a6);color:#fff;border:1px solid var(--a6)" onclick="clearLogFilter()">✕ ล้าง</button>
+            <button class="btn btn-primary btn-sm" onclick="loadLogs()">ค้นหา</button>
+            <button class="btn btn-sm" style="background:var(--a6);color:#fff;border:1px solid var(--a6)" onclick="clearLogFilter()">✕ ล้าง</button>
             <span style="margin-left:auto;font-size:12px;color:var(--s5);align-self:center" id="log-total"></span>
           </div>
         </div>
@@ -811,7 +829,7 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
           </div>
           <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
             <input type="file" id="cgd-file" accept=".xlsx,.xls" style="flex:1;min-width:200px">
-            <button class="btn btn-primary" onclick="importCGDExcel()">⬆ นำเข้า Excel</button>
+            <button class="btn btn-primary btn-sm" onclick="importCGDExcel()">⬆ นำเข้า Excel</button>
             <button class="btn btn-danger btn-sm" onclick="clearAllCGD()">🗑️ ล้างข้อมูลทั้งหมด</button>
           </div>
           <div style="display:flex;gap:8px;margin-bottom:12px">
@@ -1119,9 +1137,9 @@ function updateKeyTags(){
     if(TOUCHED[k]) $t.addClass('ok').text('✓ ยืนยันแล้ว');
     else $t.removeClass('ok').text('ค่าเริ่มต้น');
   });
-  const iv=$('#f-interface').val()||'';
+  const iv=$('#f-interface').val()||'N';
   const $ti=$('#tag-interface');
-  if(iv) $ti.addClass('ok').text('✓ เลือกแล้ว'); else $ti.removeClass('ok').text('ต้องเลือก');
+  if(iv==='Y') $ti.addClass('ok').text('Y — ส่ง HIS'); else $ti.removeClass('ok').text('N — ไม่ส่ง');
 }
 
 function collectUnconfirmed(){
@@ -1166,9 +1184,104 @@ $(function(){
   $(document).on('change','#f-purchaseItem,#f-salesItem,#f-inventoryItem', userOnly('itemtype'));
   $(document).on('change','#f-issueMethod', userOnly('issue'));
   $(document).on('change','#f-dfltWh', userOnly('wh'));
-  $(document).on('select2:select','#f-dfltWh',()=>markTouched('wh'));
   setTimeout(updateKeyTags, 900);
 });
+
+// ===================== [uom-subset] กรองหน่วยซื้อ/ขาย/คลัง เหลือเฉพาะซับเซ็ตใน UoM Group ที่เลือก =====================
+function uomMatchesGroup(unitCode, groupCode){
+  const u=String(unitCode||'').trim(), g=String(groupCode||'').trim();
+  if(!g) return false;
+  if(g.includes('/')){
+    const [cRaw,bRaw]=g.split('/');
+    const c=(cRaw||'').trim().toLowerCase(), b=(bRaw||'').trim().toLowerCase();
+    const ul=u.toLowerCase();
+    return ul.includes('/') && ul.startsWith(c) && ul.endsWith(b);
+  }
+  return u.toLowerCase()===g.toLowerCase();
+}
+function populateUomSubset(groupEntry){
+  const grp = (MD.uomGroups||[]).find(x=>String(x.uom_group_abs_entry)===String(groupEntry));
+  const subset = grp ? (MD.uoms||[]).filter(u=>uomMatchesGroup(u.uom_code, grp.uom_group_code)) : [];
+  ['#f-purUom','#f-salUom','#f-invUom'].forEach(id=>{
+    const $s=$(id), cur=$s.val();
+    $s.empty().append(new Option('— เลือก —',''));
+    subset.forEach(u=>$s.append(new Option(u.uom_code,u.uom_abs_entry)));
+    if(cur && subset.some(u=>String(u.uom_abs_entry)===String(cur))) $s.val(cur);
+    $s.trigger('change.select2');
+  });
+}
+$(document).on('change','#f-uomGroup',function(){ populateUomSubset($(this).val()); });
+// ติดนอกกลุ่ม — สำหรับตีงระบบเก่า/กรณีข้อมูลไม่สอดคล้องกับกลุ่มที่เลือก
+ function forceUomVal(selId, val){
+  if(val===undefined||val===null||val==='') return;
+  const $s=$(selId), v=String(val);
+  if(!$s.find(`option[value="${v}"]`).length) $s.append(new Option(v+' (นอกกลุ่ม)', v));
+  $s.val(v).trigger('change');
+}
+
+// ===================== [chip-select] แทน dropdown ด้วยชิป — select เดิมซ่อนไว้เพื่อ logic เดิม =====================
+function bindChipSelect(selectSel, wrapSel){
+  const $sel=$(selectSel), $wrap=$(wrapSel);
+  function render(){
+    const cur=String($sel.val()||'');
+    $wrap.empty();
+    $sel.find('option').each(function(){
+      const v=String($(this).val()||''), t=$(this).text();
+      const $b=$('<button type="button" class="chip-opt"></button>').text(t).attr('data-v',v);
+      if(v===cur) $b.addClass('active');
+      $b.on('click',function(){ $sel.val(v).trigger('change'); });
+      $wrap.append($b);
+    });
+  }
+  $sel.on('change',function(){
+    const cur=String($sel.val()||'');
+    $wrap.find('.chip-opt').removeClass('active').filter(function(){return $(this).attr('data-v')===cur;}).addClass('active');
+  });
+  render();
+}
+function bindChipToggleSwitch(selectSel, wrapSel){
+  const $sel=$(selectSel), $wrap=$(wrapSel);
+  function render(){
+    const cur=String($sel.val()||'');
+    $wrap.empty();
+    $sel.find('option').each(function(){
+      const v=String($(this).val()||''), t=$(this).text();
+      if(v==='') return; // ชิปสีเดียวไม่เหมาะกับ option ว่าง
+      const $b=$('<button type="button" class="chip-sw"><span class="sw"></span><span class="lbl"></span></button>');
+      $b.find('.lbl').text(t);
+      $b.attr('data-v',v);
+      if(v===cur) $b.addClass('on');
+      $b.on('click',function(){ $sel.val(v).trigger('change'); });
+      $wrap.append($b);
+    });
+  }
+  $sel.on('change',function(){
+    const cur=String($sel.val()||'');
+    $wrap.find('.chip-sw').removeClass('on').filter(function(){return $(this).attr('data-v')===cur;}).addClass('on');
+  });
+  render();
+}
+$(function(){
+  bindSingleChipToggle('#f-interface','#chip-f-interface','Y','N','Y — ส่ง HIS','N — ไม่ส่ง');
+  bindChipToggleSwitch('#f-issueMethod','#chip-issue');
+  bindChipCheckbox('#f-purchaseItem','#chip-f-purchaseItem');
+  bindChipCheckbox('#f-salesItem','#chip-f-salesItem');
+  bindChipCheckbox('#f-inventoryItem','#chip-f-inventoryItem');
+});
+
+// [single-chip] ชิปสวิตช์เดียว — ติ๊ก = onVal, ไม่ติ๊ก = offVal
+function bindSingleChipToggle(selectSel, chipSel, onVal, offVal, onLabel, offLabel){
+  const $sel=$(selectSel), $chip=$(chipSel);
+  if(!$sel.val()) $sel.val(offVal);
+  function render(){
+    const on = $sel.val()===onVal;
+    $chip.toggleClass('on', on);
+    $chip.find('.lbl').text(on?onLabel:offLabel);
+  }
+  $chip.off('click').on('click',function(){ $sel.val($sel.val()===onVal?offVal:onVal).trigger('change'); render(); });
+  $sel.off('change.singlechip').on('change.singlechip', render);
+  render();
+}
 
 // ===================== MOBILE APP / PWA =====================
 
@@ -1387,7 +1500,7 @@ async function loadMasterData(){
     });
 
     ug.forEach(r=>$('#f-uomGroup').append(new Option(`[${r.uom_group_abs_entry}] ${r.uom_group_code}`,r.uom_group_abs_entry)));
-    um.forEach(r=>['#f-purUom','#f-salUom','#f-invUom'].forEach(id=>$(id).append(new Option(r.uom_code,r.uom_abs_entry))));
+    // [uom-subset] ไม่เตือนหน่วยทั้งหมด — แสดงเฉพาะซับเซ็ตของกลุ่มที่เลือก (ดูที่ populateUomSubset)
     
     $('#f-dfltWh').empty().append(new Option('— เลือกคลัง —', ''));
     if(wh && wh.length){
@@ -1397,6 +1510,7 @@ async function loadMasterData(){
       $('#f-dfltWh').append(new Option('DS2 (Default)', 'DS2'));
       $('#f-dfltWh').val('DS2');
     }
+    bindChipSelect('#f-dfltWh','#chip-dfltWh');
 
     if(CU&&CU.role==='admin')renderMasterTables(ms,ig,ug,um,wh);
   }catch(e){console.error('Master:',e);}
@@ -1697,15 +1811,15 @@ function editCartItem(idx){
   $('#f-refNo').val(c.refNo||'');
   $('#f-barcode').val(c.barcode||'');
   $('#f-tradeName').val(c.tradeName||'');
-  $('#f-interface').val(c.interfaceStatus||'N');
-  $('#f-purchaseItem').prop('checked', (c.purchaseItem||'N')==='Y');
-  $('#f-salesItem').prop('checked', (c.salesItem||'N')==='Y');
-  $('#f-inventoryItem').prop('checked', (c.inventoryItem||'N')==='Y');
+  $('#f-interface').val(c.interfaceStatus||'N').trigger('change');
+  $('#f-purchaseItem').prop('checked', (c.purchaseItem||'N')==='Y').trigger('change');
+  $('#f-salesItem').prop('checked', (c.salesItem||'N')==='Y').trigger('change');
+  $('#f-inventoryItem').prop('checked', (c.inventoryItem||'N')==='Y').trigger('change');
   $('#f-cgdCode').val(c.cgdCode||'').trigger('change');
   $('#f-uomGroup').val(c.uomGroup||'').trigger('change');
-  $('#f-purUom').val(c.purUomId||'').trigger('change');
-  $('#f-salUom').val(c.salUomId||'').trigger('change');
-  $('#f-invUom').val(c.invUomId||'').trigger('change');
+  forceUomVal('#f-purUom', c.purUomId);
+  forceUomVal('#f-salUom', c.salUomId);
+  forceUomVal('#f-invUom', c.invUomId);
   $('#f-issueMethod').val(c.issueMethod||'B');
   $('#f-dfltWh').val(c.dfltWh||'').trigger('change');
   $('#f-vatGroup').val(c.vatGroup||'');
@@ -1852,11 +1966,11 @@ async function clearCreateForm(){
   try{ document.getElementById('itemForm').reset(); }catch(e){}
   $('#f-msType,#f-itemGroup,#f-uomGroup,#f-purUom,#f-salUom,#f-invUom,#f-dfltWh,#f-cgdCode').val('').trigger('change');
   $('#f-itemName,#f-engName,#f-oldCode,#f-refNo,#f-barcode,#f-tradeName,#f-vatGroup').val('');
-  $('#f-interface').val('');
-  $('#f-purchaseItem').prop('checked',true);
-  $('#f-salesItem').prop('checked',false);
-  $('#f-inventoryItem').prop('checked',false);
-  $('#f-issueMethod').val('B');
+  $('#f-interface').val('N').trigger('change');
+  $('#f-purchaseItem').prop('checked',true).trigger('change');
+  $('#f-salesItem').prop('checked',false).trigger('change');
+  $('#f-inventoryItem').prop('checked',false).trigger('change');
+  $('#f-issueMethod').val('B').trigger('change');
   $('#f-priceType').val('consignment');
   $('#f-cost').val('1000');
   $('#no-price-zone').hide();
@@ -1927,12 +2041,15 @@ function duplicateItem(idx){
   $('#f-refNo').val(it.u_ntt_ref_no||'');
   $('#f-barcode').val(it.u_ntt_barcode||'');
   $('#f-tradeName').val(it.u_ntt_trade_name||'');
-  $('#f-interface').val(it.u_ntt_interface||'N');
-  $('#f-purchaseItem').prop('checked', (it.purchase_item||'N')==='Y');
-  $('#f-salesItem').prop('checked', (it.sales_item||'N')==='Y');
-  $('#f-inventoryItem').prop('checked', (it.inventory_item||'N')==='Y');
+  $('#f-interface').val(it.u_ntt_interface||'N').trigger('change');
+  $('#f-purchaseItem').prop('checked', (it.purchase_item||'N')==='Y').trigger('change');
+  $('#f-salesItem').prop('checked', (it.sales_item||'N')==='Y').trigger('change');
+  $('#f-inventoryItem').prop('checked', (it.inventory_item||'N')==='Y').trigger('change');
   if(it.u_ntt_cgd_code) $('#f-cgdCode').val(it.u_ntt_cgd_code).trigger('change');
-  if(it.inventory_uom_entry) $('#f-invUom').val(String(it.inventory_uom_entry)).trigger('change');
+  if(it.uom_group_entry) $('#f-uomGroup').val(String(it.uom_group_entry)).trigger('change');
+  forceUomVal('#f-purUom', it.default_purchasing_uom_entry);
+  forceUomVal('#f-salUom', it.default_sales_uom_entry);
+  forceUomVal('#f-invUom', it.inventory_uom_entry);
   if(it.default_warehouse) $('#f-dfltWh').val(it.default_warehouse).trigger('change');
   if(it.purchase_vat_group) $('#f-vatGroup').val(it.purchase_vat_group);
   if(it.sys_cost!=null) $('#f-cost').val(it.sys_cost);
@@ -2054,11 +2171,11 @@ function openItemDetail(idx){
       </table>
     </div>
 
-    <div style="display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--s1);flex-wrap:wrap">
-      ${isAdmin?`<button class="btn btn-warning" style="flex:1;min-width:150px;background:var(--a0);color:var(--a6);border:1px solid var(--a1)" onclick="$('#view-mode').hide();$('#edit-mode').show();">✏️ แก้ไขข้อมูลทั้งหมด</button>`:''}
-      <button class="btn btn-secondary viewer-hide" style="background:var(--b0);color:var(--b6);border:1px solid var(--b1)" onclick="duplicateItem(${idx})">⧉ Duplicate (ออกรหัสใหม่จากตัวนี้)</button>
-      <button class="btn btn-secondary" onclick="printJobSingle('${it.doc_num||''}','${sCode}')">🖨️ พิมพ์เอกสาร</button>
-      ${isAdmin?`<button class="btn btn-danger" onclick="deleteItem('${sCode}')">🗑️ ลบพัสดุ</button>`:''}
+    <div style="display:flex;gap:7px;margin-top:14px;padding-top:14px;border-top:1px solid var(--s1);flex-wrap:wrap;justify-content:flex-end">
+      ${isAdmin?`<button class="btn btn-warning btn-sm" style="background:var(--a0);color:var(--a6);border:1px solid var(--a1)" onclick="$('#view-mode').hide();$('#edit-mode').show();">✏️ แก้ไขข้อมูล</button>`:''}
+      <button class="btn btn-secondary btn-sm viewer-hide" style="background:var(--b0);color:var(--b6);border:1px solid var(--b1)" onclick="duplicateItem(${idx})">⧉ Duplicate</button>
+      <button class="btn btn-secondary btn-sm" onclick="printJobSingle('${it.doc_num||''}','${sCode}')">🖨️ พิมพ์เอกสาร</button>
+      ${isAdmin?`<button class="btn btn-danger btn-sm" onclick="deleteItem('${sCode}')">🗑️ ลบพัสดุ</button>`:''}
     </div>
   </div>
 
@@ -2084,30 +2201,51 @@ function openItemDetail(idx){
         <div class="fg"><label>หน่วยคลัง</label><select id="e-uom"><option value="">-- ไม่ระบุ --</option>${uomOpts}</select></div>
         <div class="fg"><label>VAT Group</label><input id="e-vat" value="${escHtml(it.purchase_vat_group)}"></div>
         <div class="fg"><label>Interface</label><select id="e-interface"><option value="N" ${it.u_ntt_interface==='N'?'selected':''}>N</option><option value="Y" ${it.u_ntt_interface==='Y'?'selected':''}>Y</option></select></div>
-        <div class="fg s2"><label>ประเภทรายการ (Y = ติ๊ก / N = ไม่ติ๊ก)</label>
-          <div style="display:flex;gap:16px;align-items:center;padding:8px 12px;border:1px solid var(--s2);border-radius:var(--rad);background:#fff;min-height:38px">
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;margin:0"><input type="checkbox" id="e-purchaseItem" ${(it.purchase_item||'N')==='Y'?'checked':''} style="width:auto;margin:0"> PurchaseItem</label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;margin:0"><input type="checkbox" id="e-salesItem" ${(it.sales_item||'N')==='Y'?'checked':''} style="width:auto;margin:0"> SalesItem</label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;margin:0"><input type="checkbox" id="e-inventoryItem" ${(it.inventory_item||'N')==='Y'?'checked':''} style="width:auto;margin:0"> InventoryItem</label>
+        <div class="fg" style="grid-column:1/-1"><label>ประเภทรายการ (Y = ติ๊ก / N = ไม่ติ๊ก)</label>
+          <div class="chip-row">
+            <input type="checkbox" id="e-purchaseItem" ${(it.purchase_item||'N')==='Y'?'checked':''} style="display:none"><button type="button" class="chip-opt" id="chip-e-purchaseItem">PurchaseItem</button>
+            <input type="checkbox" id="e-salesItem" ${(it.sales_item||'N')==='Y'?'checked':''} style="display:none"><button type="button" class="chip-opt" id="chip-e-salesItem">SalesItem</button>
+            <input type="checkbox" id="e-inventoryItem" ${(it.inventory_item||'N')==='Y'?'checked':''} style="display:none"><button type="button" class="chip-opt" id="chip-e-inventoryItem">InventoryItem</button>
           </div>
         </div>
         <div class="fg"><label>ราคาทุน</label><input type="number" id="e-cost" value="${it.sys_cost||0}"></div>
         <div class="fg"><label>ราคาขาย</label><input type="number" id="e-sell" value="${it.sys_price||0}"></div>
-        <div class="fg"><label>สถานะ (การอนุมัติ)</label><select id="e-status"><option value="pending" ${it.status==='pending'?'selected':''}>⏳ รออนุมัติ</option><option value="approved" ${it.status==='approved'?'selected':''}>✅ อนุมัติแล้ว</option></select></div>
+        <div class="fg"><label>สถานะ (การอนุมัติ)</label><select id="e-status" style="display:none"><option value="pending" ${it.status==='pending'?'selected':''}>⏳ รออนุมัติ</option><option value="approved" ${it.status==='approved'?'selected':''}>✅ อนุมัติแล้ว</option></select><button type="button" class="chip-sw chip-status" id="chip-e-status-single"><span class="sw"></span><span class="lbl"></span></button></div>
       </div>
-      <div style="display:flex;gap:14px;margin-top:14px;background:#fff;padding:10px 14px;border-radius:6px;border:1px solid var(--s1);flex-wrap:wrap">
-        <label style="font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" id="e-sap" ${it.sync_sap?'checked':''}> ซิงค์ SAP สำเร็จแล้ว</label>
-        <label style="font-size:13px;font-weight:500;cursor:pointer"><input type="checkbox" id="e-his" ${it.sync_his?'checked':''}> ซิงค์ HIS สำเร็จแล้ว</label>
+      <div style="display:flex;gap:9px;margin-top:14px;background:#fff;padding:10px 14px;border-radius:6px;border:1px solid var(--s1);flex-wrap:wrap">
+        <input type="checkbox" id="e-sap" ${it.sync_sap?'checked':''} style="display:none"><button type="button" class="chip-opt" id="chip-e-sap">ซิงค์ SAP สำเร็จแล้ว</button>
+        <input type="checkbox" id="e-his" ${it.sync_his?'checked':''} style="display:none"><button type="button" class="chip-opt" id="chip-e-his">ซิงค์ HIS สำเร็จแล้ว</button>
         <!-- [4] In-Active checkbox -->
-        <label style="font-size:13px;font-weight:600;cursor:pointer;color:${isInactive?'var(--r6)':'var(--s7)'}"><input type="checkbox" id="e-inactive" ${isInactive?'checked':''}> 🔴 In-Active (หยุดใช้งาน)</label>
+        <input type="checkbox" id="e-inactive" ${isInactive?'checked':''} style="display:none"><button type="button" class="chip-opt chip-danger" id="chip-e-inactive">🔴 In-Active (หยุดใช้งาน)</button>
       </div>
     </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-success" id="btn-save-item-edit" style="flex:1" onclick="saveItemEditFull('${sCode}', this)">💾 บันทึกการแก้ไขทั้งหมด</button>
-      <button class="btn btn-outline" onclick="$('#edit-mode').hide();$('#view-mode').show();">ยกเลิก</button>
+    <div style="display:flex;gap:7px">
+      <button class="btn btn-success btn-sm" id="btn-save-item-edit" onclick="saveItemEditFull('${sCode}', this)">💾 บันทึกการแก้ไข</button>
+      <button class="btn btn-outline btn-sm" onclick="$('#edit-mode').hide();$('#view-mode').show();">ยกเลิก</button>
     </div>
   </div>`;
-  Swal.fire({title:'',html,showConfirmButton:false,showCloseButton:true,width:'850px'});
+  Swal.fire({title:'',html,showConfirmButton:false,showCloseButton:true,width:'850px',didOpen:()=>{ bindSingleStatusToggle(); bindChipCheckbox('#e-purchaseItem','#chip-e-purchaseItem'); bindChipCheckbox('#e-salesItem','#chip-e-salesItem'); bindChipCheckbox('#e-inventoryItem','#chip-e-inventoryItem'); bindChipCheckbox('#e-sap','#chip-e-sap'); bindChipCheckbox('#e-his','#chip-e-his'); bindChipCheckbox('#e-inactive','#chip-e-inactive'); }});
+}
+
+// [chip-checkbox] ชิปเช็กบอกซ์ — เลือกได้หลายอัน ไม่เหมือนชิปสวิตช์ (radio)
+function bindChipCheckbox(cbId, chipId){
+  const $cb=$(cbId), $chip=$(chipId);
+  function render(){ $chip.toggleClass('active', $cb.is(':checked')); }
+  $chip.off('click').on('click',function(){ $cb.prop('checked', !$cb.is(':checked')).trigger('change'); render(); });
+  $cb.off('change.chipcb').on('change.chipcb', render);
+  render();
+}
+
+// [status-toggle] ชิปเดียวสำหรับสถานะ — ปิด = รออนุมัติ, เปิด = อนุมัติแล้ว
+function bindSingleStatusToggle(){
+  const $sel=$('#e-status'), $chip=$('#chip-e-status-single');
+  function render(){
+    const on = $sel.val()==='approved';
+    $chip.toggleClass('on', on);
+    $chip.find('.lbl').text(on?'✅ อนุมัติแล้ว':'⏳ รออนุมัติ');
+  }
+  $chip.off('click').on('click',function(){ $sel.val($sel.val()==='approved'?'pending':'approved'); render(); });
+  render();
 }
 
 async function saveItemEditFull(code, btnEl) {
@@ -2176,7 +2314,7 @@ async function saveItemEditFull(code, btnEl) {
   } catch(e) {
      console.error('saveItemEditFull failed:', e);
      Swal.fire('บันทึกไม่สำเร็จ', e.message || 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ กรุณาลองใหม่อีกครั้ง', 'error');
-     if(btnEl){ btnEl.disabled = false; btnEl.textContent = '💾 บันทึกการแก้ไขทั้งหมด'; }
+     if(btnEl){ btnEl.disabled = false; btnEl.textContent = '💾 บันทึกการแก้ไข'; }
   } finally {
      window.__savingItemEdit = false;
   }
