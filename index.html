@@ -1221,7 +1221,14 @@ function uomMatchesGroup(unitCode, groupCode){
 }
 function populateUomSubset(groupEntry){
   const grp = (MD.uomGroups||[]).find(x=>String(x.uom_group_abs_entry)===String(groupEntry));
-  const subset = grp ? (MD.uoms||[]).filter(u=>uomMatchesGroup(u.uom_code, grp.uom_group_code)) : [];
+  const g = grp ? String(grp.uom_group_code||'').trim() : '';
+  let subset = grp ? (MD.uoms||[]).filter(u=>uomMatchesGroup(u.uom_code, g)) : [];
+  // [uom-base] เพิ่มหน่วยย่อยที่สุด (เช่น "ชิ้น") เข้าไปด้วยเสมอ เมื่อกลุ่มเป็นแบบ ภาชนะ/หน่วยฐาน
+  if(g.includes('/')){
+    const baseName = g.split('/')[1].trim().toLowerCase();
+    const baseUnit = (MD.uoms||[]).find(u=>String(u.uom_code||'').trim().toLowerCase()===baseName);
+    if(baseUnit && !subset.some(u=>String(u.uom_abs_entry)===String(baseUnit.uom_abs_entry))) subset = [baseUnit, ...subset];
+  }
   ['#f-purUom','#f-salUom','#f-invUom'].forEach(id=>{
     const $s=$(id), cur=$s.val();
     $s.empty().append(new Option('— เลือก —',''));
