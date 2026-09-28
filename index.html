@@ -318,6 +318,16 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
 /* [scroll-fix] ป็อบอัพ SweetAlert ต้องเลื่อนได้เสมอ ไม่ผูกกับ breakpoint — กันเคสจอกว้างผิดคาด/แนวนอน */
 .swal2-popup{max-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 24px)!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;overscroll-behavior:contain!important}
 .swal2-html-container{max-height:none!important;overflow-y:visible!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important}
+/* [mobile-detail-tabs] ป็อบอัพเห็นเฉพาะเจ้าหน้าที่ต่อนนี้ — ดูแบบทีละแท็บเฉพาะในมือถือ */
+.detail-tabs{display:none}
+@media(max-width:820px){
+  .detail-tabs{display:flex;gap:6px;margin-bottom:10px;position:sticky;top:0;background:#fff;z-index:5;padding:8px 0 10px;border-bottom:1px solid var(--s1)}
+  .dtab-btn{flex:1;padding:9px 8px;border:1px solid var(--s2);background:#fff;border-radius:20px;font-size:12.5px;font-weight:600;color:var(--s6);cursor:pointer;font-family:inherit;min-height:36px}
+  .dtab-btn.active{background:var(--g6);color:#fff;border-color:var(--g6)}
+  .detail-tab-wrap{display:block!important}
+  .detail-tab-wrap .dtab-panel{display:none!important;width:100%}
+  .detail-tab-wrap .dtab-panel.active{display:table!important}
+}
 </style>
 </head>
 <body>
@@ -2151,8 +2161,12 @@ function openItemDetail(idx){
         <span class="badge ${it.sync_his?'bg':'bs'}" style="font-size:12px">${it.sync_his?'✅ HIS':'– HIS'}</span>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      <table style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:14px">
+    <div class="detail-tabs" id="detail-tabs">
+      <button type="button" class="dtab-btn active" data-tab="1">ข้อมูลทั่วไป</button>
+      <button type="button" class="dtab-btn" data-tab="2">ราคา & คลัง</button>
+    </div>
+    <div class="detail-tab-wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <table class="dtab-panel active" data-tab="1" style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:14px">
         <tr><td style="padding:5px 8px;color:var(--s5);width:38%">รหัสเดิม</td><td style="padding:5px 8px;font-weight:500">${it.u_ntt_old_code||'–'}</td></tr>
         <tr style="background:var(--s0)"><td style="padding:5px 8px;color:var(--s5)">Ref.No</td><td style="padding:5px 8px;font-family:monospace">${it.u_ntt_ref_no||'–'}</td></tr>
         <tr><td style="padding:5px 8px;color:var(--s5)">Barcode</td><td style="padding:5px 8px;font-family:monospace;letter-spacing:1px">${it.u_ntt_barcode||'–'}</td></tr>
@@ -2168,7 +2182,7 @@ function openItemDetail(idx){
             <span>${(it.inventory_item||'N')==='Y'?'☑':'☐'} InventoryItem <b>${it.inventory_item||'N'}</b></span>
           </span></td></tr>
       </table>
-      <table style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:14px">
+      <table class="dtab-panel" data-tab="2" style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:14px">
         <tr><td style="padding:5px 8px;color:var(--s5)">หน่วยคลัง</td><td style="padding:5px 8px">${it.inventory_uom||it.sys_uom_name||'–'}</td></tr>
         <tr style="background:var(--s0)"><td style="padding:5px 8px;color:var(--s5)">คลัง Default</td><td style="padding:5px 8px">${it.default_warehouse||'–'}</td></tr>
         <tr><td style="padding:5px 8px;color:var(--s5)">VAT Group</td><td style="padding:5px 8px">${it.purchase_vat_group||'–'}</td></tr>
@@ -2234,7 +2248,17 @@ function openItemDetail(idx){
       <button class="btn btn-outline btn-sm" onclick="$('#edit-mode').hide();$('#view-mode').show();">ยกเลิก</button>
     </div>
   </div>`;
-  Swal.fire({title:'',html,showConfirmButton:false,showCloseButton:true,width:'850px',didOpen:()=>{ bindSingleStatusToggle(); bindChipCheckbox('#e-purchaseItem','#chip-e-purchaseItem'); bindChipCheckbox('#e-salesItem','#chip-e-salesItem'); bindChipCheckbox('#e-inventoryItem','#chip-e-inventoryItem'); bindChipCheckbox('#e-sap','#chip-e-sap'); bindChipCheckbox('#e-his','#chip-e-his'); bindChipCheckbox('#e-inactive','#chip-e-inactive'); }});
+  Swal.fire({title:'',html,showConfirmButton:false,showCloseButton:true,width:'850px',didOpen:()=>{ bindSingleStatusToggle(); bindChipCheckbox('#e-purchaseItem','#chip-e-purchaseItem'); bindChipCheckbox('#e-salesItem','#chip-e-salesItem'); bindChipCheckbox('#e-inventoryItem','#chip-e-inventoryItem'); bindChipCheckbox('#e-sap','#chip-e-sap'); bindChipCheckbox('#e-his','#chip-e-his'); bindChipCheckbox('#e-inactive','#chip-e-inactive'); bindDetailTabs(); }});
+}
+
+// [mobile-tabs] แท็บดูทีละหน้า — เฉพาะมือถือ (CSS ซ่อนบนจอกว้าง)
+function bindDetailTabs(){
+  $('.dtab-btn').off('click').on('click',function(){
+    const t=$(this).data('tab');
+    $('.dtab-btn').removeClass('active'); $(this).addClass('active');
+    $('.dtab-panel').removeClass('active').filter(function(){return String($(this).data('tab'))===String(t);}).addClass('active');
+    $('.swal2-html-container').scrollTop(0);
+  });
 }
 
 // [chip-checkbox] ชิปเช็กบอกซ์ — เลือกได้หลายอัน ไม่เหมือนชิปสวิตช์ (radio)
