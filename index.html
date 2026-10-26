@@ -58,7 +58,8 @@ body{font-family:'IBM Plex Sans Thai',sans-serif;background:var(--s1);color:var(
 .admin-only{display:none}
 .viewer-hide{}
 body.role-viewer .viewer-hide{display:none!important}
-.sidebar-foot{margin-top:auto;padding:14px;border-top:1px solid rgba(255,255,255,.07)}
+.sidebar-foot{margin-top:auto;padding:14px;border-top:1px solid rgba(255,255,255,.07);flex:none}
+.sidebar>*{flex-shrink:0}
 .user-info-side{font-size:11px;color:rgba(255,255,255,.5);margin-bottom:8px}
 .user-info-side strong{display:block;color:rgba(255,255,255,.85);font-size:12px}
 #app-main{display:none;margin-left:260px;min-height:100vh;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}
@@ -96,6 +97,8 @@ input[readonly],input[disabled]{background:var(--s0);color:var(--s5);cursor:defa
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:6px 12px;border-radius:var(--rad);font-family:inherit;font-size:12.5px;font-weight:500;cursor:pointer;border:none;transition:.15s;white-space:nowrap}
 .btn:active{transform:scale(.98)}
 .btn svg{width:13px;height:13px;stroke-width:2}
+.ln-var{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11.5px;background:#fff;border:1px solid var(--s2);border-radius:6px;padding:1px 7px;margin:2px 2px;cursor:pointer;color:var(--g6)}
+.ln-var:hover{background:var(--g0,#f0fdf4)}
 .chip-row{display:flex;gap:7px;flex-wrap:wrap;padding:0;align-items:center;min-height:36px;align-self:flex-start}
 .chip-opt{padding:0 14px;min-height:36px;display:inline-flex;align-items:center;border-radius:20px;border:1px solid var(--s2);background:#fff;font-size:13px;font-weight:500;cursor:pointer;color:var(--s6);transition:.15s;font-family:inherit}
 .chip-opt:hover{background:var(--s1)}
@@ -180,7 +183,7 @@ input[readonly],input[disabled]{background:var(--s0);color:var(--s5);cursor:defa
   position:fixed;left:0;top:0;width:260px;height:100vh;
   background:var(--g9);display:flex;flex-direction:column;z-index:100;
   transition:width .25s cubic-bezier(.4,0,.2,1);
-  overflow:hidden;
+  overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
 }
 
 /* Collapsed state */
@@ -386,6 +389,7 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
     <div class="nav-item admin-only" data-page="page-import"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg><span>นำเข้าข้อมูล (Excel)</span></div>
     <div class="nav-item admin-only" data-page="page-cgd"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span>รหัสกรมบัญชีกลาง</span></div>
     <div class="nav-item admin-only" data-page="page-logs"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-5 8l2 2 4-4"/></svg><span>บันทึกการใช้งาน (Log)</span></div>
+    <div class="nav-item admin-only" data-page="page-linenotify"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg><span>ตั้งค่าแจ้งเตือนไลน์</span></div>
     <div class="sidebar-foot">
       <div class="user-info-side"><strong id="sb-name">–</strong><span id="sb-role">–</span></div>
       <button class="btn btn-danger btn-sm" style="width:100%" onclick="logout()">ออกจากระบบ</button>
@@ -778,6 +782,55 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
           <button class="btn btn-outline btn-sm" onclick="downloadTemplate('price')" style="margin-bottom:12px">⬇ Template อัปเดตราคา (.xlsx)</button><br>
           <input type="file" id="file-import-price" accept=".xlsx,.xls" style="margin-bottom:10px">
           <button class="btn btn-success btn-sm" onclick="processExcelImport('price')">อัปโหลดและอัปเดตราคา</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LINE NOTIFY SETTINGS -->
+    <div class="page" id="page-linenotify">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><h3>🔔 ตั้งค่าแจ้งเตือนไลน์</h3>
+          <div style="display:flex;gap:7px">
+            <button class="btn btn-secondary btn-sm" onclick="lnResetDefault()">↺ ค่าเริ่มต้น</button>
+            <button class="btn btn-secondary btn-sm" onclick="lnTestSend()">✉ ส่งทดสอบ</button>
+            <button class="btn btn-primary btn-sm" onclick="lnSave()">💾 บันทึก</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="g2" style="align-items:start;gap:18px">
+            <div>
+              <div class="g2" style="gap:12px;margin-bottom:12px">
+                <div class="fg"><label>สถานะ</label>
+                  <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;margin:0;padding:8px 0"><input type="checkbox" id="ln-enabled" style="width:auto;margin:0"> เปิดการแจ้งเตือน</label>
+                </div>
+                <div class="fg"><label>แจ้งเฉพาะรหัสที่ขึ้นต้นด้วย <span style="font-size:10.5px;color:var(--s4)">(คั่นด้วยคอมมา เว้นว่าง = ทุกกลุ่ม)</span></label><input id="ln-prefixes" placeholder="64,65"></div>
+              </div>
+              <div class="fg" style="margin-bottom:12px"><label>หัวข้อความ</label>
+                <textarea id="ln-header" rows="5" style="width:100%;padding:9px 12px;border:1px solid var(--s2);border-radius:var(--rad);font-family:inherit;font-size:13px;resize:vertical"></textarea></div>
+              <div class="fg" style="margin-bottom:12px"><label>รูปแบบแต่ละรายการ <span style="font-size:10.5px;color:var(--s4)">(ซ้ำต่อ 1 รายการ)</span></label>
+                <textarea id="ln-item" rows="3" style="width:100%;padding:9px 12px;border:1px solid var(--s2);border-radius:var(--rad);font-family:inherit;font-size:13px;resize:vertical"></textarea></div>
+              <div class="fg" style="margin-bottom:12px"><label>ท้ายข้อความ</label>
+                <textarea id="ln-footer" rows="2" style="width:100%;padding:9px 12px;border:1px solid var(--s2);border-radius:var(--rad);font-family:inherit;font-size:13px;resize:vertical"></textarea></div>
+              <div style="background:var(--s0);border:1px solid var(--s2);border-radius:10px;padding:11px 13px;font-size:12px;color:var(--s6);line-height:1.9">
+                <b>ตัวแปรที่ใช้ได้</b> (คลิกเพื่อแทรกในช่องที่เลือกอยู่)<br>
+                หัว/ท้าย: <span class="ln-var">{doc_num}</span> <span class="ln-var">{creator}</span> <span class="ln-var">{created_at}</span> <span class="ln-var">{count}</span><br>
+                รายการ: <span class="ln-var">{no}</span> <span class="ln-var">{code}</span> <span class="ln-var">{name}</span> <span class="ln-var">{unit}</span> <span class="ln-var">{note}</span>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:12.5px;font-weight:600;color:var(--s6);display:block;margin-bottom:6px">ตัวอย่างข้อความในไลน์</label>
+              <div style="background:#8cabd8;border-radius:14px;padding:16px;min-height:260px">
+                <div style="display:flex;gap:8px;align-items:flex-start">
+                  <div style="width:34px;height:34px;border-radius:50%;background:#06c755;color:#fff;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;flex:none">NEW</div>
+                  <div>
+                    <div style="font-size:11px;color:#fff;margin-bottom:3px">New Item Alert!</div>
+                    <div id="ln-preview" style="background:#fff;border-radius:4px 16px 16px 16px;padding:10px 13px;font-size:13px;line-height:1.55;white-space:pre-wrap;word-break:break-word;max-width:340px;color:#111"></div>
+                  </div>
+                </div>
+              </div>
+              <div id="ln-len" style="font-size:11px;color:var(--s4);margin-top:6px;text-align:right"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1927,17 +1980,19 @@ $('#btn-process').on('click',async function(){
       
     cart=[];renderCart();await loadMasterData();
     if(typeof logAction==='function') logAction('create_job', {doc_num:docNum, count:generated.length, codes:generated}, 'job', docNum);
-    // [notify] แจ้งเตือน 1 ครั้งต่อใบงาน — เฉพาะกลุ่มที่ขึ้นต้นด้วย 64 และ 65 (ไม่รอผล ไม่บล็อกการทำงาน)
-    const mailItems = inserts.filter(r=>/^(64|65)/.test(r.item_code||''));
-    if(mailItems.length){
+    // [notify] แจ้งเตือน 1 ครั้งต่อใบงาน — กลุ่ม/รูปแบบตามหน้า "ตั้งค่าแจ้งเตือนไลน์" (ไม่รอผล ไม่บล็อกการทำงาน)
+    (async()=>{ try{
+      const cfg = await lnGetSettings();
+      const mailItems = inserts.filter(r=>lnMatchPrefix(r.item_code, cfg.prefixes));
+      if(!mailItems.length) return;
       const np={
         doc_num:docNum, creator:CU.name,
         created_at:new Date().toLocaleString('th-TH'),
         items:mailItems.map(r=>({code:r.item_code,name:r.item_name,unit:r.inventory_uom||'',note:r.u_ntt_remark||''}))
       };
-      if(typeof notifyJobLine==='function') notifyJobLine(np);
+      if(cfg.enabled && typeof notifyJobLine==='function'){ np.text = lnRender(cfg, np); notifyJobLine(np); }
       if(typeof notifyJobEmail==='function') notifyJobEmail(np);
-    }
+    }catch(e){ console.warn('notify', e); } })();
     Swal.fire({icon:'success',title:'ออกรหัสสำเร็จ!',html:`<b>${docNum}</b><br><small style="font-family:monospace">${generated.join('<br>')}</small>`,confirmButtonColor:'#256e4e'});
   }catch(e){Swal.fire('เกิดข้อผิดพลาด',e.message,'error');}
 });
@@ -2910,12 +2965,109 @@ async function processExcelImport(type){
 }
 
 // ===================== NAVIGATION =====================
+// ===================== LINE NOTIFY SETTINGS =====================
+const LN_DEFAULT = {
+  enabled: true,
+  prefixes: '64,65',
+  header: '🆕 ออกรหัสพัสดุใหม่ {count} รายการ\nใบงาน: {doc_num}\nโดย: {creator}\n{created_at}\n',
+  item: '{no}. {code}\n   {name} ({unit})',
+  footer: ''
+};
+let LN_CACHE = null;
+async function lnGetSettings(force){
+  if(LN_CACHE && !force) return LN_CACHE;
+  try{
+    const r = await DB.get('app_settings','key=eq.line_notify&select=value');
+    LN_CACHE = Object.assign({}, LN_DEFAULT, (r[0]&&r[0].value)||{});
+  }catch(e){ console.warn('app_settings', e); LN_CACHE = Object.assign({}, LN_DEFAULT); }
+  return LN_CACHE;
+}
+function lnMatchPrefix(code, prefixes){
+  const list = String(prefixes||'').split(',').map(s=>s.trim()).filter(Boolean);
+  if(!list.length) return true;
+  return list.some(p=>String(code||'').startsWith(p));
+}
+function lnFill(tpl, map){ return String(tpl||'').replace(/\{(\w+)\}/g,(m,k)=> (k in map) ? String(map[k]??'') : m); }
+function lnRender(cfg, np){
+  const head = { doc_num:np.doc_num, creator:np.creator, created_at:np.created_at, count:np.items.length };
+  const MAX=40;
+  const lines = np.items.slice(0,MAX).map((it,i)=>{
+    let s = lnFill(cfg.item, {no:i+1, code:it.code, name:it.name, unit:it.unit, note:it.note});
+    if(!it.unit) s = s.replace(/\s*\(\s*\)/g,'');
+    return s;
+  });
+  if(np.items.length>MAX) lines.push(`...และอีก ${np.items.length-MAX} รายการ`);
+  let t = [lnFill(cfg.header, head), lines.join('\n'), lnFill(cfg.footer, head)].filter(s=>String(s).trim()!=='').join('\n');
+  if(t.length>4900) t = t.slice(0,4890)+'\n...';
+  return t;
+}
+const LN_SAMPLE = { doc_num:'DOC-261026-0001', creator:'ตัวอย่าง ผู้ใช้', created_at:new Date().toLocaleString('th-TH'),
+  items:[{code:'6511380006',name:'สายอุ่นแก๊ส สำหรับผ่าตัดผ่านกล้อง',unit:'เส้น',note:''},{code:'6420063468',name:'เลนส์แก้วตาเทียม',unit:'ชิ้น',note:'รายการออกรหัสจาก PR ORDER'}] };
+function lnReadForm(){
+  return { enabled:$('#ln-enabled').is(':checked'), prefixes:$('#ln-prefixes').val().trim(),
+    header:$('#ln-header').val(), item:$('#ln-item').val(), footer:$('#ln-footer').val() };
+}
+function lnFillForm(c){
+  $('#ln-enabled').prop('checked',!!c.enabled); $('#ln-prefixes').val(c.prefixes||'');
+  $('#ln-header').val(c.header||''); $('#ln-item').val(c.item||''); $('#ln-footer').val(c.footer||'');
+  lnPreview();
+}
+function lnPreview(){
+  const t = lnRender(lnReadForm(), LN_SAMPLE);
+  $('#ln-preview').text(t);
+  $('#ln-len').text(`${t.length.toLocaleString()} / 5,000 ตัวอักษร`);
+}
+let LN_LAST_FOCUS = null;
+$(document).on('input','#ln-header,#ln-item,#ln-footer,#ln-prefixes', lnPreview);
+$(document).on('change','#ln-enabled', lnPreview);
+$(document).on('focus','#ln-header,#ln-item,#ln-footer', function(){ LN_LAST_FOCUS=this; });
+$(document).on('click','.ln-var', function(){
+  const el = LN_LAST_FOCUS || document.getElementById('ln-item');
+  const v = $(this).text(), s = el.selectionStart??el.value.length, e = el.selectionEnd??el.value.length;
+  el.value = el.value.slice(0,s)+v+el.value.slice(e);
+  el.focus(); el.selectionStart = el.selectionEnd = s+v.length;
+  lnPreview();
+});
+async function lnLoadPage(){ lnFillForm(await lnGetSettings(true)); }
+function lnResetDefault(){ lnFillForm(LN_DEFAULT); }
+async function lnSave(){
+  const v = lnReadForm();
+  try{
+    await fetch(`${SUPABASE_URL}/rest/v1/app_settings?on_conflict=key`,{
+      method:'POST', headers:{..._headers(), Prefer:'resolution=merge-duplicates,return=minimal'},
+      body: JSON.stringify({key:'line_notify', value:v, updated_by:CU?CU.name:null, updated_at:new Date().toISOString()})
+    }).then(async r=>{ if(!r.ok) throw new Error(await r.text()); });
+    LN_CACHE = Object.assign({}, LN_DEFAULT, v);
+    if(typeof logAction==='function') logAction('master_add',{line_notify:v},'settings','line_notify');
+    Swal.fire({toast:true,position:'top-end',icon:'success',title:'บันทึกการตั้งค่าแล้ว',showConfirmButton:false,timer:2000});
+  }catch(e){
+    const msg = String(e.message||e);
+    Swal.fire('บันทึกไม่สำเร็จ', /app_settings|PGRST205|42P01/.test(msg) ? 'ยังไม่มีตาราง app_settings — กรุณารัน SQL ในไฟล์ LINE_NOTIFY.md ก่อน' : msg, 'error');
+  }
+}
+async function lnTestSend(){
+  const v = lnReadForm();
+  const np = Object.assign({}, LN_SAMPLE, {doc_num:'ทดสอบ', creator:CU?CU.name:'', created_at:new Date().toLocaleString('th-TH')});
+  np.text = '[ทดสอบ]\n' + lnRender(v, np);
+  try{
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/notify-line`,{method:'POST',
+      headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON,Authorization:`Bearer ${SUPABASE_ANON}`}, body:JSON.stringify(np)});
+    const out = await r.text();
+    if(!r.ok) throw new Error(out);
+    Swal.fire('ส่งทดสอบแล้ว','ตรวจสอบข้อความในกลุ่มไลน์','success');
+  }catch(e){
+    const m = String(e.message||e);
+    Swal.fire('ส่งไม่สำเร็จ', /LINE_GROUP_ID/.test(m)?'ยังไม่ได้ตั้ง LINE_GROUP_ID ใน Supabase Secrets':m,'error');
+  }
+}
 function switchPage(p){
   $('.page').removeClass('active');$('#'+p).addClass('active');
   $('.nav-item').removeClass('active');$(`.nav-item[data-page="${p}"]`).addClass('active');
   const T={'page-create':'ออกรหัสพัสดุ','page-history':'ประวัติใบงาน','page-search':'ค้นหา / จัดการสถานะ','page-export':'Export CSV / DTW','page-master':'ข้อมูลหลัก (Master)','page-users':'จัดการผู้ใช้งาน','page-import':'นำเข้าข้อมูล','page-print':'พิมพ์ใบงาน','page-cgd':'รหัสกรมบัญชีกลาง','page-logs':'บันทึกการใช้งาน'};
   $('#page-title').text(T[p]||'');
   if(p==='page-logs' && typeof loadLogs==='function') loadLogs();
+  if(p==='page-linenotify') lnLoadPage();
+  if(p==='page-linenotify') $('#page-title').text('ตั้งค่าแจ้งเตือนไลน์');
   // sync bottom nav (มือถือ)
   $('.bn-item').removeClass('active');$(`.bn-item[data-page="${p}"]`).addClass('active');
 }
