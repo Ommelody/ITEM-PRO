@@ -803,13 +803,19 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
                 <div class="fg"><label>สถานะ</label>
                   <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;margin:0;padding:8px 0"><input type="checkbox" id="ln-enabled" style="width:auto;margin:0"> เปิดการแจ้งเตือน</label>
                 </div>
+                <div class="fg"><label>รูปแบบการส่ง</label>
+                  <select id="ln-mode"><option value="instant">ส่งทันทีทุกใบงาน</option><option value="digest">สรุปตามรอบเวลา</option></select></div>
+                <div class="fg" id="ln-hours-wrap"><label>ส่งทุกกี่ชั่วโมง <span style="font-size:10.5px;color:var(--s4)">(ไม่มีรายการ = ไม่ส่ง)</span></label><input id="ln-hours" type="number" min="1" max="168" step="1" value="1"></div>
                 <div class="fg"><label>แจ้งเฉพาะรหัสที่ขึ้นต้นด้วย <span style="font-size:10.5px;color:var(--s4)">(คั่นด้วยคอมมา เว้นว่าง = ทุกกลุ่ม)</span></label><input id="ln-prefixes" placeholder="64,65"></div>
               </div>
               <div class="fg" style="margin-bottom:12px"><label>หัวข้อความ</label>
                 <textarea id="ln-header" rows="5" style="width:100%;padding:9px 12px;border:1px solid var(--s2);border-radius:var(--rad);font-family:inherit;font-size:13px;resize:vertical"></textarea></div>
+              <div class="fg" id="ln-dig-wrap" style="margin-bottom:12px"><label>หัวข้อความสรุป <span style="font-size:10.5px;color:var(--s4)">(ใช้เมื่อเลือก "สรุปตามรอบเวลา")</span></label>
+                <textarea id="ln-dheader" rows="4" style="width:100%;padding:9px 12px;border:1px solid var(--s2);border-radius:var(--rad);font-family:inherit;font-size:13px;resize:vertical"></textarea>
+                <div style="font-size:11px;color:var(--s5);margin-top:4px">ตัวแปรสรุป: <span class="ln-var">{count}</span> <span class="ln-var">{docs}</span> <span class="ln-var">{from}</span> <span class="ln-var">{to}</span> <span class="ln-var">{hours}</span> <span class="ln-var">{creators}</span> · ในรายการใช้ได้เพิ่ม: <span class="ln-var">{doc_num}</span> <span class="ln-var">{creator}</span></div></div>
               <div class="fg" style="margin-bottom:12px"><label>รูปแบบแต่ละรายการ <span style="font-size:10.5px;color:var(--s4)">(ซ้ำต่อ 1 รายการ)</span></label>
                 <textarea id="ln-item" rows="3" style="width:100%;padding:9px 12px;border:1px solid var(--s2);border-radius:var(--rad);font-family:inherit;font-size:13px;resize:vertical"></textarea></div>
-              <div class="fg" style="margin-bottom:12px"><label>ท้ายข้อความ</label>
+              <div class="fg" style="margin-bottom:12px"><label>ท้ายข้อความ <span style="font-size:10.5px;color:var(--s4)">(ใช้ทั้งสองรูปแบบ)</span></label>
                 <textarea id="ln-footer" rows="2" style="width:100%;padding:9px 12px;border:1px solid var(--s2);border-radius:var(--rad);font-family:inherit;font-size:13px;resize:vertical"></textarea></div>
               <div style="background:var(--s0);border:1px solid var(--s2);border-radius:10px;padding:11px 13px;font-size:12px;color:var(--s6);line-height:1.9">
                 <b>ตัวแปรที่ใช้ได้</b> (คลิกเพื่อแทรกในช่องที่เลือกอยู่)<br>
@@ -1990,7 +1996,7 @@ $('#btn-process').on('click',async function(){
         created_at:new Date().toLocaleString('th-TH'),
         items:mailItems.map(r=>({code:r.item_code,name:r.item_name,unit:r.inventory_uom||'',note:r.u_ntt_remark||''}))
       };
-      if(cfg.enabled && typeof notifyJobLine==='function'){ np.text = lnRender(cfg, np); notifyJobLine(np); }
+      if(cfg.enabled && cfg.mode!=='digest' && typeof notifyJobLine==='function'){ np.text = lnRender(cfg, np); notifyJobLine(np); }
       if(typeof notifyJobEmail==='function') notifyJobEmail(np);
     }catch(e){ console.warn('notify', e); } })();
     Swal.fire({icon:'success',title:'ออกรหัสสำเร็จ!',html:`<b>${docNum}</b><br><small style="font-family:monospace">${generated.join('<br>')}</small>`,confirmButtonColor:'#256e4e'});
@@ -2968,6 +2974,10 @@ async function processExcelImport(type){
 // ===================== LINE NOTIFY SETTINGS =====================
 const LN_DEFAULT = {
   enabled: true,
+  mode: 'instant',
+  digest_hours: 1,
+  digest_header: '\ud83d\udccb \u0e2a\u0e23\u0e38\u0e1b\u0e01\u0e32\u0e23\u0e2d\u0e2d\u0e01\u0e23\u0e2b\u0e31\u0e2a\u0e43\u0e2b\u0e21\u0e48 {count} \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23 ({docs} \u0e43\u0e1a\u0e07\u0e32\u0e19)\n\u0e0a\u0e48\u0e27\u0e07 {from} - {to}\n',
+  digest_footer: '',
   prefixes: '64,65',
   header: '🆕 ออกรหัสพัสดุใหม่ {count} รายการ\nใบงาน: {doc_num}\nโดย: {creator}\n{created_at}\n',
   item: '{no}. {code}\n   {name} ({unit})',
@@ -3005,22 +3015,31 @@ const LN_SAMPLE = { doc_num:'DOC-261026-0001', creator:'ตัวอย่าง
   items:[{code:'6511380006',name:'สายอุ่นแก๊ส สำหรับผ่าตัดผ่านกล้อง',unit:'เส้น',note:''},{code:'6420063468',name:'เลนส์แก้วตาเทียม',unit:'ชิ้น',note:'รายการออกรหัสจาก PR ORDER'}] };
 function lnReadForm(){
   return { enabled:$('#ln-enabled').is(':checked'), prefixes:$('#ln-prefixes').val().trim(),
+    mode:$('#ln-mode').val(), digest_hours:Math.max(1,Math.min(168,parseInt($('#ln-hours').val())||1)), digest_header:$('#ln-dheader').val(),
     header:$('#ln-header').val(), item:$('#ln-item').val(), footer:$('#ln-footer').val() };
 }
 function lnFillForm(c){
-  $('#ln-enabled').prop('checked',!!c.enabled); $('#ln-prefixes').val(c.prefixes||'');
+  $('#ln-enabled').prop('checked',!!c.enabled); $('#ln-mode').val(c.mode||'instant'); $('#ln-hours').val(c.digest_hours||1); $('#ln-dheader').val(c.digest_header||''); $('#ln-prefixes').val(c.prefixes||'');
   $('#ln-header').val(c.header||''); $('#ln-item').val(c.item||''); $('#ln-footer').val(c.footer||'');
   lnPreview();
 }
 function lnPreview(){
-  const t = lnRender(lnReadForm(), LN_SAMPLE);
+  const f = lnReadForm(), dg = f.mode==='digest';
+  $('#ln-hours-wrap,#ln-dig-wrap').toggle(dg);
+  $('#ln-header').closest('.fg').toggle(!dg);
+  let t;
+  if(dg){
+    const its = LN_SAMPLE.items.map((it,i)=>lnFill(f.item,{no:i+1,code:it.code,name:it.name,unit:it.unit,note:'',doc_num:LN_SAMPLE.doc_num,creator:LN_SAMPLE.creator}).replace(/\s*\(\s*\)/g,''));
+    const hv={count:2,docs:1,from:'26/10/69 12:00',to:'26/10/69 13:00',hours:f.digest_hours,creators:LN_SAMPLE.creator};
+    t=[lnFill(f.digest_header,hv),its.join('\n'),lnFill(f.footer,hv)].filter(s=>String(s).trim()!=='').join('\n');
+  } else t = lnRender(f, LN_SAMPLE);
   $('#ln-preview').text(t);
   $('#ln-len').text(`${t.length.toLocaleString()} / 5,000 ตัวอักษร`);
 }
 let LN_LAST_FOCUS = null;
-$(document).on('input','#ln-header,#ln-item,#ln-footer,#ln-prefixes', lnPreview);
-$(document).on('change','#ln-enabled', lnPreview);
-$(document).on('focus','#ln-header,#ln-item,#ln-footer', function(){ LN_LAST_FOCUS=this; });
+$(document).on('input','#ln-header,#ln-dheader,#ln-item,#ln-footer,#ln-prefixes,#ln-hours', lnPreview);
+$(document).on('change','#ln-enabled,#ln-mode', lnPreview);
+$(document).on('focus','#ln-header,#ln-dheader,#ln-item,#ln-footer', function(){ LN_LAST_FOCUS=this; });
 $(document).on('click','.ln-var', function(){
   const el = LN_LAST_FOCUS || document.getElementById('ln-item');
   const v = $(this).text(), s = el.selectionStart??el.value.length, e = el.selectionEnd??el.value.length;
@@ -3048,7 +3067,7 @@ async function lnSave(){
 async function lnTestSend(){
   const v = lnReadForm();
   const np = Object.assign({}, LN_SAMPLE, {doc_num:'ทดสอบ', creator:CU?CU.name:'', created_at:new Date().toLocaleString('th-TH')});
-  np.text = '[ทดสอบ]\n' + lnRender(v, np);
+  np.text = '[ทดสอบ]\n' + $('#ln-preview').text();
   try{
     const r = await fetch(`${SUPABASE_URL}/functions/v1/notify-line`,{method:'POST',
       headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON,Authorization:`Bearer ${SUPABASE_ANON}`}, body:JSON.stringify(np)});
