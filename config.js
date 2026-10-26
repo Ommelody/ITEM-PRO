@@ -14,7 +14,7 @@ const PR_ORDER_WEBAPP_URL = ""; // เช่น "https://script.google.com/macro
 // ตาราง "item_code_requests" อยู่บน Supabase ของ BRPR — วาง URL + anon key ของ BRPR ตรงนี้
 // (โปรเจกต์ ref: hkqyeeonfyzlbnimztuz — ขอ anon public key จากทีม BRPR)
 const BRPR_SUPABASE_URL = "https://hkqyeeonfyzlbnimztuz.supabase.co";
-const BRPR_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrcXllZW9uZnl6bGJuaW16dHV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2ODU4NDMsImV4cCI6MjA5OTI2MTg0M30.Od-n8yNuIWu6Kx1Y_mW6Aemg3TRCxZG5ooTESpOgZBE"; // <-- วาง anon public key ของ BRPR ตรงนี้ (ว่าง = ปิดการเชื่อม BRPR ไว้ก่อน)
+const BRPR_ANON = ""; // <-- วาง anon public key ของ BRPR ตรงนี้ (ว่าง = ปิดการเชื่อม BRPR ไว้ก่อน)
 
 // ---- internal: do not edit below ----
 const _headers = () => ({
@@ -77,6 +77,30 @@ const DB = {
     return res.json();
   }
 };
+
+// ---- Email notify (Resend ผ่าน Supabase Edge Function) — best-effort ไม่รบกวนงานหลัก ----
+const EMAIL_NOTIFY_ENABLED = false;  // ปิดอีเมลไว้ (เปลี่ยนไปใช้ LINE) — ตั้งเป็น true เมื่อต้องการอีเมล
+const LINE_NOTIFY_ENABLED  = true;   // แจ้งเตือน LINE (เฉพาะรหัส 64/65)
+async function notifyJobLine(payload){
+  if(!LINE_NOTIFY_ENABLED) return;
+  try{
+    await fetch(`${SUPABASE_URL}/functions/v1/notify-line`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "apikey":SUPABASE_ANON, "Authorization":`Bearer ${SUPABASE_ANON}` },
+      body: JSON.stringify(payload)
+    });
+  }catch(e){ console.warn('notify-line failed', e); }
+}
+async function notifyJobEmail(payload){
+  if(!EMAIL_NOTIFY_ENABLED) return;
+  try{
+    await fetch(`${SUPABASE_URL}/functions/v1/notify-email`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "apikey":SUPABASE_ANON, "Authorization":`Bearer ${SUPABASE_ANON}` },
+      body: JSON.stringify(payload)
+    });
+  }catch(e){ console.warn('notify-email failed', e); }
+}
 
 // ---- Activity Log (บันทึกทุก transaction เพื่อตรวจสอบย้อนหลัง) ----
 // best-effort: ถ้าตาราง activity_logs ยังไม่ถูกสร้าง หรือเขียนไม่สำเร็จ จะไม่รบกวนการทำงานหลัก
