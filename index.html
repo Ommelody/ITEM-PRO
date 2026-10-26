@@ -1927,6 +1927,17 @@ $('#btn-process').on('click',async function(){
       
     cart=[];renderCart();await loadMasterData();
     if(typeof logAction==='function') logAction('create_job', {doc_num:docNum, count:generated.length, codes:generated}, 'job', docNum);
+    // [notify] แจ้งเตือน 1 ครั้งต่อใบงาน — เฉพาะกลุ่มที่ขึ้นต้นด้วย 64 และ 65 (ไม่รอผล ไม่บล็อกการทำงาน)
+    const mailItems = inserts.filter(r=>/^(64|65)/.test(r.item_code||''));
+    if(mailItems.length){
+      const np={
+        doc_num:docNum, creator:CU.name,
+        created_at:new Date().toLocaleString('th-TH'),
+        items:mailItems.map(r=>({code:r.item_code,name:r.item_name,unit:r.inventory_uom||'',note:r.u_ntt_remark||''}))
+      };
+      if(typeof notifyJobLine==='function') notifyJobLine(np);
+      if(typeof notifyJobEmail==='function') notifyJobEmail(np);
+    }
     Swal.fire({icon:'success',title:'ออกรหัสสำเร็จ!',html:`<b>${docNum}</b><br><small style="font-family:monospace">${generated.join('<br>')}</small>`,confirmButtonColor:'#256e4e'});
   }catch(e){Swal.fire('เกิดข้อผิดพลาด',e.message,'error');}
 });
