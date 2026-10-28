@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Item Master Pro V2 — ศูนย์การแพทย์ธรรมศาสตร์</title>
+<title>Item Pro V2 — ศูนย์การแพทย์ธรรมศาสตร์</title>
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="shortcut icon" href="favicon.ico">
 <!-- PWA / Mobile App -->
@@ -1941,7 +1941,7 @@ $('#btn-process').on('click',async function(){
         }
         const fr = await DB.get('db_mstype', `group_code=eq.${prefix}`);
         const msMax = fr.length ? parseInt(fr[0].last_running_no || 0) : 0;
-        runMap[prefix] = Math.max(realMax, msMax);
+        runMap[prefix] = realMax; // [running-fix] ใช้เลขสูงสุดจริงในตาราง items เท่านั้น ไม่ใช้ตัวนับเก่าที่ไม่ลดลง
       }
       runMap[prefix]++;
       
@@ -2433,10 +2433,21 @@ async function saveItemEditFull(code, btnEl) {
   }
 }
 
+// [running-fix] ปรับตัวนับรันนิ่งของกลุ่มให้ตรงกับเลขสูงสุดจริงในตาราง items (เรียกหลังลบ)
+async function resyncRunning(prefixes){
+  const set=[...new Set((prefixes||[]).filter(Boolean))];
+  for(const p of set){
+    try{
+      const d=await DB.get('items',`or=(u_ntt_ms_type.eq.${p},u_ntt_asset_pur.eq.${p})&item_code=like.${p}%25&order=item_code.desc&limit=1`);
+      const mx=(d.length&&d[0].item_code)?(parseInt(String(d[0].item_code).substring(String(p).length))||0):0;
+      await DB.patch('db_mstype',`group_code=eq.${p}`,{last_running_no:mx});
+    }catch(e){console.warn('resyncRunning',p,e);}
+  }
+}
 async function deleteItem(code){
   const cf=await Swal.fire({title:'ยืนยันลบ?',text:'ข้อมูลจะถูกลบถาวร',icon:'warning',showCancelButton:true,confirmButtonColor:'#dc2626',confirmButtonText:'ลบ',cancelButtonText:'ยกเลิก'});
   if(!cf.isConfirmed)return;
-  try{await DB.delete('items',`item_code=eq.${code}`);if(typeof logAction==='function')logAction('delete_item',{code},'item',code);Swal.close();doSearch();}catch(e){Swal.fire('Error',e.message,'error');}
+  try{await DB.delete('items',`item_code=eq.${code}`);await resyncRunning([String(code).slice(0,6)]);if(typeof logAction==='function')logAction('delete_item',{code},'item',code);Swal.close();doSearch();}catch(e){Swal.fire('Error',e.message,'error');}
 }
 
 // ===================== HISTORY =====================
@@ -2492,8 +2503,10 @@ async function deleteJobOrder(docNum){
   if(!cf.isConfirmed)return;
   Swal.fire({title:'กำลังลบ...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
   try{
+    const _gone = await DB.get('items',`doc_num=eq.${docNum}&select=item_code&limit=5000`);
     await DB.delete('items',`doc_num=eq.${docNum}`);
     await DB.delete('job_orders',`doc_num=eq.${docNum}`);
+    await resyncRunning(_gone.map(x=>String(x.item_code||'').slice(0,6)));
     if(typeof logAction==='function')logAction('delete_job',{doc_num:docNum},'job',docNum);
     Swal.fire({toast:true,position:'top-end',icon:'success',title:'ลบใบงานเรียบร้อย',showConfirmButton:false,timer:2000});
     loadHistory();
@@ -2519,6 +2532,7 @@ async function confirmDeleteAllJobs(){
   try{
     await DB.delete('items','id=gte.0');
     await DB.delete('job_orders','id=gte.0');
+    try{ await DB.patch('db_mstype','last_running_no=gt.0',{last_running_no:0}); }catch(e){console.warn(e);}
     Swal.fire('เสร็จสิ้น','ลบข้อมูลทั้งหมดเรียบร้อย','success');
     loadHistory();
   }catch(e){Swal.fire('Error',e.message,'error');}
@@ -2894,7 +2908,7 @@ async function processExcelImport(type){
             }
             const fr = await DB.get('db_mstype', `group_code=eq.${ms}`);
             const msMax = fr.length ? parseInt(fr[0].last_running_no || 0) : 0;
-            runMap[ms] = Math.max(realMax, msMax);
+            runMap[ms] = realMax; // [running-fix]
           }
           runMap[ms]++;
 
