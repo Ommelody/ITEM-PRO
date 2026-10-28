@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Item Pro V2 — ศูนย์การแพทย์ธรรมศาสตร์</title>
+<title>Item Master Pro V2 — ศูนย์การแพทย์ธรรมศาสตร์</title>
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="shortcut icon" href="favicon.ico">
 <!-- PWA / Mobile App -->
@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Item Pro">
+<meta name="apple-mobile-web-app-title" content="Item Master Pro">
 <script>
 // [zoom-lock] กันซูมด้วย pinch/ctrl-wheel เท่านั้น — ไม่แตะ touchmove/touchend เพื่อไม่ให้บล็อกการเลื่อนหน้าจอ/สกอลล์ในป็อบอัพ
 document.addEventListener('gesturestart', e=>e.preventDefault());
@@ -804,13 +804,13 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
                   <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;margin:0;padding:8px 0"><input type="checkbox" id="ln-enabled" style="width:auto;margin:0"> เปิดการแจ้งเตือน</label>
                 </div>
                 <div class="fg"><label>รูปแบบการส่ง</label>
-                  <select id="ln-mode"><option value="instant">ส่งทันทีทุกใบงาน</option><option value="digest">สรุปตามรอบเวลา</option></select></div>
+                  <select id="ln-mode"><option value="instant">ส่งทันทีทุกใบงาน</option><option value="digest">สรุปตามรอบเวลา</option><option value="daily">สรุปสิ้นวัน (ทุกเที่ยงคืน)</option></select></div>
                 <div class="fg" id="ln-hours-wrap"><label>ส่งทุกกี่ชั่วโมง <span style="font-size:10.5px;color:var(--s4)">(ไม่มีรายการ = ไม่ส่ง)</span></label><input id="ln-hours" type="number" min="1" max="168" step="1" value="1"></div>
                 <div class="fg"><label>แจ้งเฉพาะรหัสที่ขึ้นต้นด้วย <span style="font-size:10.5px;color:var(--s4)">(คั่นด้วยคอมมา เว้นว่าง = ทุกกลุ่ม)</span></label><input id="ln-prefixes" placeholder="64,65"></div>
               </div>
               <div class="fg" style="margin-bottom:12px"><label>หัวข้อความ</label>
                 <textarea id="ln-header" rows="5" style="width:100%;padding:9px 12px;border:1px solid var(--s2);border-radius:var(--rad);font-family:inherit;font-size:13px;resize:vertical"></textarea></div>
-              <div class="fg" id="ln-dig-wrap" style="margin-bottom:12px"><label>หัวข้อความสรุป <span style="font-size:10.5px;color:var(--s4)">(ใช้เมื่อเลือก "สรุปตามรอบเวลา")</span></label>
+              <div class="fg" id="ln-dig-wrap" style="margin-bottom:12px"><label>หัวข้อความสรุป <span style="font-size:10.5px;color:var(--s4)">(ใช้เมื่อเลือก "สรุป" ทั้งสองแบบ)</span></label>
                 <textarea id="ln-dheader" rows="4" style="width:100%;padding:9px 12px;border:1px solid var(--s2);border-radius:var(--rad);font-family:inherit;font-size:13px;resize:vertical"></textarea>
                 <div style="font-size:11px;color:var(--s5);margin-top:4px">ตัวแปรสรุป: <span class="ln-var">{count}</span> <span class="ln-var">{docs}</span> <span class="ln-var">{from}</span> <span class="ln-var">{to}</span> <span class="ln-var">{hours}</span> <span class="ln-var">{creators}</span> · ในรายการใช้ได้เพิ่ม: <span class="ln-var">{doc_num}</span> <span class="ln-var">{creator}</span></div></div>
               <div class="fg" style="margin-bottom:12px"><label>รูปแบบแต่ละรายการ <span style="font-size:10.5px;color:var(--s4)">(ซ้ำต่อ 1 รายการ)</span></label>
@@ -820,7 +820,7 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
               <div style="background:var(--s0);border:1px solid var(--s2);border-radius:10px;padding:11px 13px;font-size:12px;color:var(--s6);line-height:1.9">
                 <b>ตัวแปรที่ใช้ได้</b> (คลิกเพื่อแทรกในช่องที่เลือกอยู่)<br>
                 หัว/ท้าย: <span class="ln-var">{doc_num}</span> <span class="ln-var">{creator}</span> <span class="ln-var">{created_at}</span> <span class="ln-var">{count}</span><br>
-                รายการ: <span class="ln-var">{no}</span> <span class="ln-var">{code}</span> <span class="ln-var">{name}</span> <span class="ln-var">{unit}</span> <span class="ln-var">{note}</span>
+                รายการ: <span class="ln-var">{no}</span> <span class="ln-var">{code}</span> <span class="ln-var">{name}</span> <span class="ln-var">{unit}</span> <span class="ln-var">{note}</span> <span class="ln-var">{group}</span> <span class="ln-var">{interface}</span>
               </div>
             </div>
             <div>
@@ -1995,9 +1995,9 @@ $('#btn-process').on('click',async function(){
       const np={
         doc_num:docNum, creator:CU.name,
         created_at:new Date().toLocaleString('th-TH'),
-        items:mailItems.map(r=>({code:r.item_code,name:r.item_name,unit:r.inventory_uom||'',note:r.u_ntt_remark||''}))
+        items:mailItems.map(r=>({code:r.item_code,name:r.item_name,unit:r.inventory_uom||'',note:r.u_ntt_remark||'',group:r.items_group_text||getGroupName(r.items_group_code)||'-',iface:r.u_ntt_interface||'N'}))
       };
-      if(cfg.enabled && cfg.mode!=='digest' && typeof notifyJobLine==='function'){ np.text = lnRender(cfg, np); notifyJobLine(np); }
+      if(cfg.enabled && (cfg.mode||'instant')==='instant' && typeof notifyJobLine==='function'){ np.text = lnRender(cfg, np); notifyJobLine(np); }
       if(typeof notifyJobEmail==='function') notifyJobEmail(np);
     }catch(e){ console.warn('notify', e); } })();
     Swal.fire({icon:'success',title:'ออกรหัสสำเร็จ!',html:`<b>${docNum}</b><br><small style="font-family:monospace">${generated.join('<br>')}</small>`,confirmButtonColor:'#256e4e'});
@@ -3023,7 +3023,7 @@ const LN_DEFAULT = {
   digest_footer: '',
   prefixes: '64,65',
   header: '🆕 ออกรหัสพัสดุใหม่ {count} รายการ\nใบงาน: {doc_num}\nโดย: {creator}\n{created_at}\n',
-  item: '{no}. {code}\n   {name} ({unit})',
+  item: '{no}. {code}\n   {name} ({unit})\n   กลุ่มบัญชี: {group} | Interface: {interface}',
   footer: ''
 };
 let LN_CACHE = null;
@@ -3045,7 +3045,7 @@ function lnRender(cfg, np){
   const head = { doc_num:np.doc_num, creator:np.creator, created_at:np.created_at, count:np.items.length };
   const MAX=40;
   const lines = np.items.slice(0,MAX).map((it,i)=>{
-    let s = lnFill(cfg.item, {no:i+1, code:it.code, name:it.name, unit:it.unit, note:it.note});
+    let s = lnFill(cfg.item, {no:i+1, code:it.code, name:it.name, unit:it.unit, note:it.note, group:it.group||'-', interface:it.iface||'N'});
     if(!it.unit) s = s.replace(/\s*\(\s*\)/g,'');
     return s;
   });
@@ -3055,7 +3055,7 @@ function lnRender(cfg, np){
   return t;
 }
 const LN_SAMPLE = { doc_num:'DOC-261026-0001', creator:'ตัวอย่าง ผู้ใช้', created_at:new Date().toLocaleString('th-TH'),
-  items:[{code:'6511380006',name:'สายอุ่นแก๊ส สำหรับผ่าตัดผ่านกล้อง',unit:'เส้น',note:''},{code:'6420063468',name:'เลนส์แก้วตาเทียม',unit:'ชิ้น',note:'รายการออกรหัสจาก PR ORDER'}] };
+  items:[{code:'6511380006',name:'สายอุ่นแก๊ส สำหรับผ่าตัดผ่านกล้อง',unit:'เส้น',note:'',group:'วัสดุการแพทย์ทั่วไป',iface:'Y'},{code:'6420063468',name:'เลนส์แก้วตาเทียม',unit:'ชิ้น',note:'รายการออกรหัสจาก PR ORDER',group:'วัสดุการแพทย์ทั่วไป',iface:'N'}] };
 function lnReadForm(){
   return { enabled:$('#ln-enabled').is(':checked'), prefixes:$('#ln-prefixes').val().trim(),
     mode:$('#ln-mode').val(), digest_hours:Math.max(1,Math.min(168,parseInt($('#ln-hours').val())||1)), digest_header:$('#ln-dheader').val(),
@@ -3067,13 +3067,13 @@ function lnFillForm(c){
   lnPreview();
 }
 function lnPreview(){
-  const f = lnReadForm(), dg = f.mode==='digest';
-  $('#ln-hours-wrap,#ln-dig-wrap').toggle(dg);
+  const f = lnReadForm(), dg = f.mode!=='instant';
+  $('#ln-dig-wrap').toggle(dg); $('#ln-hours-wrap').toggle(f.mode==='digest');
   $('#ln-header').closest('.fg').toggle(!dg);
   let t;
   if(dg){
-    const its = LN_SAMPLE.items.map((it,i)=>lnFill(f.item,{no:i+1,code:it.code,name:it.name,unit:it.unit,note:'',doc_num:LN_SAMPLE.doc_num,creator:LN_SAMPLE.creator}).replace(/\s*\(\s*\)/g,''));
-    const hv={count:2,docs:1,from:'26/10/69 12:00',to:'26/10/69 13:00',hours:f.digest_hours,creators:LN_SAMPLE.creator};
+    const its = LN_SAMPLE.items.map((it,i)=>lnFill(f.item,{no:i+1,code:it.code,name:it.name,unit:it.unit,note:'',group:it.group,interface:it.iface,doc_num:LN_SAMPLE.doc_num,creator:LN_SAMPLE.creator}).replace(/\s*\(\s*\)/g,''));
+    const hv=f.mode==='daily'?{count:2,docs:1,from:'26/10/69 00:00',to:'27/10/69 00:00',hours:24,creators:LN_SAMPLE.creator}:{count:2,docs:1,from:'26/10/69 12:00',to:'26/10/69 13:00',hours:f.digest_hours,creators:LN_SAMPLE.creator};
     t=[lnFill(f.digest_header,hv),its.join('\n'),lnFill(f.footer,hv)].filter(s=>String(s).trim()!=='').join('\n');
   } else t = lnRender(f, LN_SAMPLE);
   $('#ln-preview').text(t);
