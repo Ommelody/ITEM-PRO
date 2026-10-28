@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Item Master Pro">
+<meta name="apple-mobile-web-app-title" content="Item Pro">
 <script>
 // [zoom-lock] กันซูมด้วย pinch/ctrl-wheel เท่านั้น — ไม่แตะ touchmove/touchend เพื่อไม่ให้บล็อกการเลื่อนหน้าจอ/สกอลล์ในป็อบอัพ
 document.addEventListener('gesturestart', e=>e.preventDefault());
@@ -1927,8 +1927,6 @@ $('#btn-process').on('click',async function(){
   Swal.fire({title:'กำลังบันทึก...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
   try{
     const docNum=`DOC-${new Date().toISOString().slice(2,10).replace(/-/g,'')}-${Math.floor(1000+Math.random()*9000)}`;
-    await DB.post('job_orders',{doc_num:docNum,creator_name:CU.name,status:'completed',created_at:new Date().toISOString()});
-    
     const runMap={},inserts=[],generated=[];
     for(const c of cart){
       const prefix = c.msType;
@@ -1980,7 +1978,10 @@ $('#btn-process').on('click',async function(){
         created_at:new Date().toISOString()
       });
     }
+    // [job-fix] สร้างใบงานหลังบันทึกรายการสำเร็จเท่านั้น และถ้าสร้างใบงานพลาดให้ย้อนลบรายการ ไม่ให้เกิดใบงานว่าง/รายการค้าง
     await DB.post('items',inserts);
+    try{ await DB.post('job_orders',{doc_num:docNum,creator_name:CU.name,status:'completed',created_at:new Date().toISOString()}); }
+    catch(e){ try{await DB.delete('items',`doc_num=eq.${docNum}`);}catch(_){} throw e; }
     for(const[code,val]of Object.entries(runMap))
       await DB.patch('db_mstype',`group_code=eq.${code}`,{last_running_no:val});
       
@@ -2777,6 +2778,32 @@ async function exportCSV(mode){
     // [2] ตัด U_NTT_RefNo และ U_NTT_Barcode ออก; GLMethod ใช้ getGLMethod()
     const h1=["ItemCode","U_NTT_OldCode","ItemName","ForeignName","U_NTT_TradeName","U_NTT_AliasName","ItemType","ItemsGroupCode","PurchaseItem","SalesItem","InventoryItem","U_NTT_Interface","ManageSerialNumbers","ManageBatchNumbers","Mainsupplier","SupplierCatalogNo","PurchaseVATGroup","SalesVATGroup","WTLiable","UoMGroupEntry","PurchaseUnit","DefaultPurchasingUoMEntry","SalesUnit","DefaultSalesUoMEntry","InventoryUOM","InventoryUoMEntry","DefaultCountingUoMEntry","GLMethod","CostAccountingMethod","DefaultWarehouse","ManageStockByWarehouse","MinInventory","MaxInventory","PlanningSystem","ProcurementMethod","IssueMethod","LeadTime","MinOrderQuantity","ShippingType","U_NTT_ItemType","U_NTT_StockGP","U_NTT_MonthEXP","U_NTT_MSType","U_NTT_AssetPur"];
     const h2=["ItemCode","U_NTT_OldCode","ItemName","FrgnName","U_NTT_TradeName","U_NTT_AliasName","ItemType","ItmsGrpCod","PrchseItem","SellItem","InvntItem","U_NTT_Interface","ManSerNum","ManBtchNum","CardCode","SuppCatNum","VatGroupPu","VatGourpSa","WTLiable","UoMGroupEntry","BuyUnitMsr","DefaultPurchasingUoMEntry","SalUnitMsr","DefaultSalesUoMEntry","InvntryUom","InventoryUoMEntry","DefaultCountingUoMEntry","GLMethod","EvalSystem","DfltWH","ByWh","MinLevel","MaxLevel","PlaningSys","PrcrmntMtd","IssueMthd","LeadTime","MinOrdrQty","ShipType","U_NTT_ItemType","U_NTT_StockGP","U_NTT_MonthEXP","U_NTT_MSType","U_NTT_AssetPur"];
+    // [export-fix] ข้อมูลเก่าบางรายการเก็บเป็นชื่อกลุ่ม (เช่น "วัสดุเครื่องแต่งกาย") — แปลงเป็นเลข Items Group / UoM ก่อนส่งออก
+    const _n = s => String(s==null?'':s).trim().replace(/\s+/g,' ').toLowerCase();
+    const _isNum = v => /^\d+$/.test(String(v==null?'':v).trim());
+    const _unresolved = new Set();
+    const resolveItemGroup = v => {
+      if(v===null||v===undefined||v==='') return '';
+      if(_isNum(v)) return String(v).trim();
+      const k=_n(v);
+      const g=(MD.itemGroups||[]).find(x=>_n(x.group_name)===k) || (MD.itemGroups||[]).find(x=>_n(x.group_name).includes(k)||k.includes(_n(x.group_name)));
+      if(g) return String(g.number);
+      _unresolved.add(String(v)); return v;
+    };
+    const resolveUomGroup = v => {
+      if(v===null||v===undefined||v==='') return '';
+      if(_isNum(v)) return String(v).trim();
+      const g=(MD.uomGroups||[]).find(x=>_n(x.uom_group_code)===_n(v));
+      if(g) return String(g.uom_group_abs_entry);
+      _unresolved.add('UoM Group: '+v); return v;
+    };
+    const resolveUom = v => {
+      if(v===null||v===undefined||v==='') return '';
+      if(_isNum(v)) return String(v).trim();
+      const u=(MD.uoms||[]).find(x=>_n(x.uom_code)===_n(v));
+      if(u) return String(u.uom_abs_entry);
+      _unresolved.add('หน่วย: '+v); return v;
+    };
     const dr=rows.map(r=>{
       const msCode = r.u_ntt_ms_type || r.u_ntt_asset_pur || '';
       const glMethod = r.gl_method || getGLMethod(msCode);
@@ -2784,17 +2811,17 @@ async function exportCSV(mode){
         r.item_code,r.u_ntt_old_code||'',
         r.item_name,r.english_name||r.item_name,
         r.u_ntt_trade_name||'',r.u_ntt_alias_name||'',
-        r.item_type||'I',r.items_group_code||'',
+        r.item_type||'I',resolveItemGroup(r.items_group_code),
         r.purchase_item||'N',r.sales_item||'N',r.inventory_item||'N',
         r.u_ntt_interface||'N',
         r.manage_serial_numbers||'N',r.manage_batch_numbers||'N',
         r.main_supplier||'',r.supplier_catalog_no||'',
         r.purchase_vat_group||'IEH07',r.sales_vat_group||'OEH00',
         r.wt_liable||'Y',
-        r.uom_group_entry||'',
-        r.purchase_unit||'',r.default_purchasing_uom_entry||'',
-        r.sales_unit||'',r.default_sales_uom_entry||'',
-        r.inventory_uom||'',r.inventory_uom_entry||'',r.default_counting_uom_entry||'',
+        resolveUomGroup(r.uom_group_entry),
+        r.purchase_unit||'',resolveUom(r.default_purchasing_uom_entry),
+        r.sales_unit||'',resolveUom(r.default_sales_uom_entry),
+        r.inventory_uom||'',resolveUom(r.inventory_uom_entry),resolveUom(r.default_counting_uom_entry),
         glMethod,
         r.cost_accounting_method||'F',
         r.default_warehouse||'DS2',
@@ -2812,6 +2839,7 @@ async function exportCSV(mode){
     const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download=`${fileName}.csv`;a.click();
     if(typeof logAction==='function')logAction('export',{mode,count:rows.length,file:fileName},'export');
     Swal.fire({toast:true,position:'top-end',icon:'success',title:`Export ${rows.length} รายการสำเร็จ`,showConfirmButton:false,timer:2000});
+    if(_unresolved.size){ setTimeout(()=>Swal.fire({icon:'warning',title:'บางค่ายังแปลงเป็นเลขไม่ได้',html:'<div style="text-align:left;font-size:13px">ไม่พบในข้อมูลหลัก กรุณาแก้ในไฟล์ก่อนนำเข้า SAP:<br>• '+[..._unresolved].map(escHtml).join('<br>• ')+'</div>'}),2300); }
   }catch(e){Swal.fire('ผิดพลาด',e.message,'error');}
 }
 
@@ -2863,7 +2891,6 @@ async function processExcelImport(type){
         Swal.fire('สำเร็จ',`อัปเดตราคา ${cnt} รายการ`,'success');
       }else{
         const docNum=`IMP-${new Date().toISOString().slice(2,10).replace(/-/g,'')}-${Math.floor(1000+Math.random()*9000)}`;
-        await DB.post('job_orders',{doc_num:docNum,creator_name:CU.name,status:'completed',created_at:new Date().toISOString()});
         const runMap={},inserts=[];
         // [import-fix] ตัดแถวตัวอย่าง/คำอธิบายของ template ออก (เช่นแถวที่ Cost = "ราคาทุน")
         const isNum = v => v!==null && v!=='' && !isNaN(parseFloat(String(v).replace(/,/g,'')));
@@ -2974,6 +3001,8 @@ async function processExcelImport(type){
           return Swal.fire('ไม่มีข้อมูลที่นำเข้าได้','ตรวจสอบว่ากรอกคอลัมน์ MSType, ItemName และ Cost เป็นตัวเลขหรือไม่','warning');
         }
         await DB.post('items',inserts);
+        try{ await DB.post('job_orders',{doc_num:docNum,creator_name:CU.name,status:'completed',created_at:new Date().toISOString()}); }
+        catch(e){ try{await DB.delete('items',`doc_num=eq.${docNum}`);}catch(_){} throw e; }
         for(const[code,val]of Object.entries(runMap))await DB.patch('db_mstype',`group_code=eq.${code}`,{last_running_no:val});
         await loadMasterData();
         if(typeof logAction==='function') logAction('import',{doc_num:docNum,count:inserts.length,skipped},'job',docNum);
