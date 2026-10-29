@@ -835,7 +835,7 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
               <div style="background:var(--s0);border:1px solid var(--s2);border-radius:10px;padding:11px 13px;font-size:12px;color:var(--s6);line-height:1.9">
                 <b>ตัวแปรที่ใช้ได้</b> (คลิกเพื่อแทรกในช่องที่เลือกอยู่)<br>
                 หัว/ท้าย: <span class="ln-var">{doc_num}</span> <span class="ln-var">{creator}</span> <span class="ln-var">{created_at}</span> <span class="ln-var">{count}</span><br>
-                รายการ: <span class="ln-var">{no}</span> <span class="ln-var">{code}</span> <span class="ln-var">{name}</span> <span class="ln-var">{unit}</span> <span class="ln-var">{note}</span> <span class="ln-var">{group}</span> <span class="ln-var">{interface}</span>
+                รายการ: <span class="ln-var">{no}</span> <span class="ln-var">{code}</span> <span class="ln-var">{name}</span> <span class="ln-var">{unit}</span> <span class="ln-var">{note}</span> <span class="ln-var">{group}</span> <span class="ln-var">{interface}</span> <span class="ln-var">{revenue}</span>
               </div>
             </div>
             <div>
@@ -2045,7 +2045,7 @@ $('#btn-process').on('click',async function(){
       const np={
         doc_num:docNum, creator:CU.name,
         created_at:new Date().toLocaleString('th-TH'),
-        items:mailItems.map(r=>({code:r.item_code,name:r.item_name,unit:r.inventory_uom||'',note:r.u_ntt_remark||'',group:r.items_group_text||getGroupName(r.items_group_code)||'-',iface:r.u_ntt_interface||'N'}))
+        items:mailItems.map(r=>({code:r.item_code,name:r.item_name,unit:r.inventory_uom||'',note:r.u_ntt_remark||'',group:r.items_group_text||getGroupName(r.items_group_code)||'-',iface:r.u_ntt_interface||'N',revenue:r.u_ntt_revenue_cat||'-'}))
       };
       if(cfg.enabled && (cfg.mode||'instant')==='instant' && typeof notifyJobLine==='function'){ np.text = lnRender(cfg, np); notifyJobLine(np); }
       if(typeof notifyJobEmail==='function') notifyJobEmail(np);
@@ -3104,7 +3104,7 @@ function lnRender(cfg, np){
   const head = { doc_num:np.doc_num, creator:np.creator, created_at:np.created_at, count:np.items.length };
   const MAX=40;
   const lines = np.items.slice(0,MAX).map((it,i)=>{
-    let s = lnFill(cfg.item, {no:i+1, code:it.code, name:it.name, unit:it.unit, note:it.note, group:it.group||'-', interface:it.iface||'N'});
+    let s = lnFill(cfg.item, {no:i+1, code:it.code, name:it.name, unit:it.unit, note:it.note, group:it.group||'-', interface:it.iface||'N', revenue:it.revenue||'-'});
     if(!it.unit) s = s.replace(/\s*\(\s*\)/g,'');
     return s;
   });
@@ -3114,7 +3114,7 @@ function lnRender(cfg, np){
   return t;
 }
 const LN_SAMPLE = { doc_num:'DOC-261026-0001', creator:'ตัวอย่าง ผู้ใช้', created_at:new Date().toLocaleString('th-TH'),
-  items:[{code:'6511380006',name:'สายอุ่นแก๊ส สำหรับผ่าตัดผ่านกล้อง',unit:'เส้น',note:'',group:'วัสดุการแพทย์ทั่วไป',iface:'Y'},{code:'6420063468',name:'เลนส์แก้วตาเทียม',unit:'ชิ้น',note:'รายการออกรหัสจาก PR ORDER',group:'วัสดุการแพทย์ทั่วไป',iface:'N'}] };
+  items:[{code:'6511380006',name:'สายอุ่นแก๊ส สำหรับผ่าตัดผ่านกล้อง',unit:'เส้น',note:'',group:'วัสดุการแพทย์ทั่วไป',iface:'Y',revenue:'005:หมวดที่ 5 ค่าเวชภัณฑ์ที่มิใช่ยา'},{code:'6420063468',name:'เลนส์แก้วตาเทียม',unit:'ชิ้น',note:'รายการออกรหัสจาก PR ORDER',group:'วัสดุการแพทย์ทั่วไป',iface:'N',revenue:'002:หมวดที่ 2 ค่าอวัยวะเทียมและค่าอุปกรณ์ในการบำบัดรักษาโรค'}] };
 function lnReadForm(){
   return { enabled:$('#ln-enabled').is(':checked'), prefixes:$('#ln-prefixes').val().trim(),
     mode:$('#ln-mode').val(), digest_hours:Math.max(1,Math.min(168,parseInt($('#ln-hours').val())||1)), digest_header:$('#ln-dheader').val(),
@@ -3131,7 +3131,7 @@ function lnPreview(){
   $('#ln-header').closest('.fg').toggle(!dg);
   let t;
   if(dg){
-    const its = LN_SAMPLE.items.map((it,i)=>lnFill(f.item,{no:i+1,code:it.code,name:it.name,unit:it.unit,note:'',group:it.group,interface:it.iface,doc_num:LN_SAMPLE.doc_num,creator:LN_SAMPLE.creator}).replace(/\s*\(\s*\)/g,''));
+    const its = LN_SAMPLE.items.map((it,i)=>lnFill(f.item,{no:i+1,code:it.code,name:it.name,unit:it.unit,note:'',group:it.group,interface:it.iface,revenue:it.revenue,doc_num:LN_SAMPLE.doc_num,creator:LN_SAMPLE.creator}).replace(/\s*\(\s*\)/g,''));
     const hv=f.mode==='daily'?{count:2,docs:1,from:'26/10/69 00:00',to:'26/10/69 23:59',hours:24,creators:LN_SAMPLE.creator}:{count:2,docs:1,from:'26/10/69 12:00',to:'26/10/69 13:00',hours:f.digest_hours,creators:LN_SAMPLE.creator};
     t=[lnFill(f.digest_header,hv),its.join('\n'),lnFill(f.footer,hv)].filter(s=>String(s).trim()!=='').join('\n');
   } else t = lnRender(f, LN_SAMPLE);
