@@ -2045,7 +2045,7 @@ $('#btn-process').on('click',async function(){
       const np={
         doc_num:docNum, creator:CU.name,
         created_at:new Date().toLocaleString('th-TH'),
-        items:mailItems.map(r=>({code:r.item_code,name:r.item_name,unit:r.inventory_uom||'',note:r.u_ntt_remark||'',group:r.items_group_text||getGroupName(r.items_group_code)||'-',iface:r.u_ntt_interface||'N',revenue:r.u_ntt_revenue_cat||'-'}))
+        items:mailItems.map(r=>({code:r.item_code,name:r.item_name,unit:r.inventory_uom||'',note:r.u_ntt_remark||'',group:r.items_group_text||getGroupName(r.items_group_code)||'-',iface:r.u_ntt_interface||'N',revenue:String(r.u_ntt_revenue_cat||'').replace(/^\s*\d+\s*:\s*/,'')||'-'}))
       };
       if(cfg.enabled && (cfg.mode||'instant')==='instant' && typeof notifyJobLine==='function'){ np.text = lnRender(cfg, np); notifyJobLine(np); }
       if(typeof notifyJobEmail==='function') notifyJobEmail(np);
@@ -3114,7 +3114,7 @@ function lnRender(cfg, np){
   return t;
 }
 const LN_SAMPLE = { doc_num:'DOC-261026-0001', creator:'ตัวอย่าง ผู้ใช้', created_at:new Date().toLocaleString('th-TH'),
-  items:[{code:'6511380006',name:'สายอุ่นแก๊ส สำหรับผ่าตัดผ่านกล้อง',unit:'เส้น',note:'',group:'วัสดุการแพทย์ทั่วไป',iface:'Y',revenue:'005:หมวดที่ 5 ค่าเวชภัณฑ์ที่มิใช่ยา'},{code:'6420063468',name:'เลนส์แก้วตาเทียม',unit:'ชิ้น',note:'รายการออกรหัสจาก PR ORDER',group:'วัสดุการแพทย์ทั่วไป',iface:'N',revenue:'002:หมวดที่ 2 ค่าอวัยวะเทียมและค่าอุปกรณ์ในการบำบัดรักษาโรค'}] };
+  items:[{code:'6511380006',name:'สายอุ่นแก๊ส สำหรับผ่าตัดผ่านกล้อง',unit:'เส้น',note:'',group:'วัสดุการแพทย์ทั่วไป',iface:'Y',revenue:'หมวดที่ 5 ค่าเวชภัณฑ์ที่มิใช่ยา'},{code:'6420063468',name:'เลนส์แก้วตาเทียม',unit:'ชิ้น',note:'รายการออกรหัสจาก PR ORDER',group:'วัสดุการแพทย์ทั่วไป',iface:'N',revenue:'หมวดที่ 2 ค่าอวัยวะเทียมและค่าอุปกรณ์ในการบำบัดรักษาโรค'}] };
 function lnReadForm(){
   return { enabled:$('#ln-enabled').is(':checked'), prefixes:$('#ln-prefixes').val().trim(),
     mode:$('#ln-mode').val(), digest_hours:Math.max(1,Math.min(168,parseInt($('#ln-hours').val())||1)), digest_header:$('#ln-dheader').val(),
