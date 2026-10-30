@@ -2592,7 +2592,7 @@ async function saveItemEditFull(code, btnEl) {
      };
 
      Swal.fire({title:'กำลังบันทึก...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
-     if(window.PH_EDIT && PH_EDIT.code===code){ // [photos]
+     if(PH_EDIT && PH_EDIT.code===code){ // [photos]
        for(let k=0;k<2;k++){
          const s=PH_EDIT.slots[k], o=PH_EDIT.orig[k];
          if(s&&s.blob){ p['photo'+(k+1)+'_url']=await uploadItemPhoto(s.blob,code,k); if(o) deleteItemPhoto(o); }
