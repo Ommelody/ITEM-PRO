@@ -1480,7 +1480,8 @@ function resetFormPhotos(){ PH_FORM.slots=[null,null]; renderFormPhotos(); }
 function initEditPhotos(it,isAdmin){
   const orig=[it.photo1_url||null,it.photo2_url||null];
   PH_EDIT={code:it.item_code,orig,slots:orig.map(u=>u?{url:u}:null)};
-  photoWidget('#e-photos',PH_EDIT,{readonly:!isAdmin});
+  photoWidget('#e-photos',PH_EDIT,{readonly:true});          // แท็บรูปภาพในหน้าดูรายละเอียด (ดูอย่างเดียว)
+  if(isAdmin) photoWidget('#e-photos-edit',PH_EDIT);         // ในฟอร์มแก้ไข (ถ่าย/เลือก/ลบ)
 }
 $(function(){ renderFormPhotos(); });
 
@@ -2508,6 +2509,7 @@ function openItemDetail(idx){
         <input type="checkbox" id="e-inactive" ${isInactive?'checked':''} style="display:none"><button type="button" class="chip-opt chip-danger" id="chip-e-inactive">🔴 In-Active (หยุดใช้งาน)</button>
       </div>
     </div>
+    <div class="fg" style="margin:0 0 12px"><label style="font-size:12px;font-weight:600;color:var(--s6);display:block;margin-bottom:6px">📷 รูปภาพสินค้า <span style="font-weight:400;color:var(--s4)">(สูงสุด 2 รูป)</span></label><div id="e-photos-edit"></div></div>
     <div style="display:flex;gap:7px">
       <button class="btn btn-success btn-sm" id="btn-save-item-edit" onclick="saveItemEditFull('${sCode}', this)">💾 บันทึกการแก้ไข</button>
       <button class="btn btn-outline btn-sm" onclick="$('#edit-mode').hide();$('#view-mode').show();">ยกเลิก</button>
