@@ -1396,6 +1396,30 @@ if('serviceWorker' in navigator){
   });
 }
 
+// ===================== GLOBAL ERROR POPUP =====================
+// แสดงสาเหตุ error ทุกกรณีที่หลุดจาก try/catch (กันเงียบ) — กันเด้งซ้ำภายใน 4 วินาที
+let _lastErrAt = 0, _lastErrMsg = '';
+function showGlobalError(title, e){
+  try{
+    const raw = (e && (e.message || e.reason?.message)) || String(e||'ไม่ทราบสาเหตุ');
+    const msg = String(raw).slice(0,600);
+    if(/ResizeObserver|Script error\.?$|Non-Error promise/i.test(msg)) return;
+    const now = Date.now();
+    if(msg === _lastErrMsg && now - _lastErrAt < 4000) return;
+    _lastErrAt = now; _lastErrMsg = msg;
+    if(typeof Swal === 'undefined') return;
+    if(Swal.isVisible() && Swal.getPopup() && Swal.getPopup().classList.contains('swal2-loading')) Swal.close();
+    Swal.fire({
+      icon:'error', title:title,
+      html:'<div style="text-align:left;font-size:13px;line-height:1.7"><div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:9px 12px;color:#991b1b;word-break:break-word;font-family:ui-monospace,monospace;font-size:12px">'+escHtml(msg)+'</div><div style="margin-top:8px;color:#64748b;font-size:12px">หากเกิดซ้ำ ให้แคปหน้าจอนี้ส่งให้ผู้ดูแลระบบ</div></div>',
+      confirmButtonText:'ปิด', confirmButtonColor:'#256e4e'
+    });
+    if(typeof logAction==='function') logAction('client_error',{msg,where:title},'system','');
+  }catch(_){}
+}
+window.addEventListener('error', ev=> showGlobalError('เกิดข้อผิดพลาดในระบบ', ev.error || ev.message));
+window.addEventListener('unhandledrejection', ev=> showGlobalError('การทำงานไม่สำเร็จ', ev.reason));
+
 // ===================== AUTO UPDATE CHECK =====================
 // เวลาออกเวอร์ชันใหม่: แก้เลขใน APP_VERSION (index.html) และ version.json ให้ตรงกัน แล้วอัปโหลดทั้งสองไฟล์
 const APP_VERSION = '2026.10.28-1';
@@ -2352,7 +2376,7 @@ function openItemDetail(idx){
           </select>
         </div>
         <div style="margin-top:10px"><label style="font-size:12px;font-weight:600;color:var(--s6);display:block;margin-bottom:4px">หมวดรายได้</label>
-          <select id="e-revcat" style="padding:7px 10px;font-size:13px;width:100%;border:1px solid var(--s2);border-radius:var(--rad)">
+          <select id="e-revcat" data-orig="${escHtml(it.u_ntt_revenue_cat||'')}" style="padding:7px 10px;font-size:13px;width:100%;border:1px solid var(--s2);border-radius:var(--rad)">
             <option value="">— ไม่ระบุ —</option>
             ${REV_DATA.map(g=>`<option value="${g.rev_full||''}" ${(g.rev_full||'')===(it.u_ntt_revenue_cat||'')?'selected':''}>${g.rev_full||''}</option>`).join('')}
           </select>
@@ -2441,7 +2465,7 @@ async function saveItemEditFull(code, btnEl) {
         u_ntt_barcode: $('#e-barcode').val() || null,
         u_ntt_old_code: $('#e-oldcode').val() || null,
         u_ntt_cgd_code: $('#e-cgdcode').val() || null,  // [1]
-        ...(($('#e-revcat').val()||it.u_ntt_revenue_cat)?{u_ntt_revenue_cat:$('#e-revcat').val()||null}:{}),
+        ...(($('#e-revcat').val()||$('#e-revcat').attr('data-orig'))?{u_ntt_revenue_cat:$('#e-revcat').val()||null}:{}),
         u_ntt_ms_type: msCode.startsWith('8') ? null : msCode,
         u_ntt_asset_pur: msCode.startsWith('8') ? msCode : null,
         items_group_code: grpCode,
@@ -2486,7 +2510,7 @@ async function saveItemEditFull(code, btnEl) {
      Swal.fire({toast:true,position:'top-end',icon:'success',title:'อัปเดตเรียบร้อย — บันทึกข้อมูลลงฐานข้อมูลแล้ว',showConfirmButton:false,timer:2200});
   } catch(e) {
      console.error('saveItemEditFull failed:', e);
-     Swal.fire('บันทึกไม่สำเร็จ', e.message || 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ กรุณาลองใหม่อีกครั้ง', 'error');
+     Swal.fire({icon:'error',title:'บันทึกไม่สำเร็จ',html:'<div style="text-align:left;font-size:13px"><div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:9px 12px;color:#991b1b;word-break:break-word;font-family:ui-monospace,monospace;font-size:12px">'+escHtml(String(e.message||e||'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ').slice(0,600))+'</div></div>',confirmButtonText:'ปิด',confirmButtonColor:'#256e4e'});
      if(btnEl){ btnEl.disabled = false; btnEl.textContent = '💾 บันทึกการแก้ไข'; }
   } finally {
      window.__savingItemEdit = false;
