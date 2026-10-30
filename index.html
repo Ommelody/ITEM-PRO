@@ -327,7 +327,17 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
 .swal2-html-container{max-height:none!important;overflow-y:visible!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important}
 /* [mobile-detail-tabs] ป็อบอัพเห็นเฉพาะเจ้าหน้าที่ต่อนนี้ — ดูแบบทีละแท็บเฉพาะในมือถือ */
 .detail-tabs{display:none}
+.detail-tab-wrap .dtab-panel[data-tab="3"]{display:none}
+.detail-tab-wrap .dtab-panel[data-tab="3"].active{display:block}
+@media(min-width:821px){
+  .detail-tabs{display:flex!important;gap:6px;margin-bottom:10px;border-bottom:1px solid var(--s1);padding-bottom:10px}
+  .dtab-btn{padding:7px 16px;border:1px solid var(--s2);background:#fff;border-radius:20px;font-size:12.5px;font-weight:600;color:var(--s6);cursor:pointer;font-family:inherit}
+  .dtab-btn.active{background:var(--g6);color:#fff;border-color:var(--g6)}
+  .dtab-btn[data-tab="2"]{display:none}
+  .detail-tab-wrap[data-view="photo"] .dtab-panel:not([data-tab="3"]){display:none}
+}
 @media(max-width:820px){
+  .detail-tab-wrap div.dtab-panel.active{display:block!important}
   .detail-tabs{display:flex;gap:6px;margin-bottom:10px;position:sticky;top:0;background:#fff;z-index:5;padding:8px 0 10px;border-bottom:1px solid var(--s1)}
   .dtab-btn{flex:1;padding:9px 8px;border:1px solid var(--s2);background:#fff;border-radius:20px;font-size:12.5px;font-weight:600;color:var(--s6);cursor:pointer;font-family:inherit;min-height:36px}
   .dtab-btn.active{background:var(--g6);color:#fff;border-color:var(--g6)}
@@ -470,6 +480,7 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
               <div class="fg"><label>รหัสเบิกกรมบัญชีกลาง <span style="font-size:10px;color:var(--s4)">(ถ้ามี)</span></label><select id="f-cgdCode" class="sel2"><option value="">— ค้นหา —</option></select></div>
               <div class="fg"><label>หมวดรายได้ <span style="font-size:10px;color:var(--s4)">(ถ้ามี)</span></label><select id="f-revCat" class="sel2"><option value="">— เลือกหมวด —</option></select></div>
             </div>
+            <div class="fg" style="margin-top:14px"><label>รูปภาพสินค้า <span style="font-size:10px;color:var(--s4)">(สูงสุด 2 รูป · ถ่ายหรือเลือกจากเครื่อง · บีบอัดอัตโนมัติ)</span></label><div id="f-photos"></div></div>
             <p class="sec-divider">2 — หน่วยนับและคลัง</p>
             <div class="g4">
               <div class="fg" data-req="1" data-label="UoM Group"><label>UoM Group <span class="req">*</span></label><select id="f-uomGroup" class="sel2" required><option value="">— เลือก —</option></select><div class="fg-err-msg">กรุณาเลือก UoM Group</div></div>
@@ -1396,6 +1407,83 @@ if('serviceWorker' in navigator){
   });
 }
 
+// ===================== ITEM PHOTOS (ถ่าย/เลือกรูป · บีบอัด · Supabase Storage) =====================
+let PH_FORM={slots:[null,null]}, PH_EDIT=null;
+function compressImage(file,max=1000,q=0.7){
+  return new Promise((res,rej)=>{
+    const img=new Image(), u=URL.createObjectURL(file);
+    img.onload=()=>{
+      let w=img.naturalWidth,h=img.naturalHeight; const k=Math.min(1,max/Math.max(w,h));
+      w=Math.round(w*k); h=Math.round(h*k);
+      const c=document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h); URL.revokeObjectURL(u);
+      c.toBlob(b=>{ if(b&&b.type==='image/webp') return res(b);
+        c.toBlob(j=>j?res(j):rej(new Error('บีบอัดรูปไม่สำเร็จ')),'image/jpeg',q); },'image/webp',q);
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(u); rej(new Error('เปิดไฟล์รูปไม่ได้')); };
+    img.src=u;
+  });
+}
+async function uploadItemPhoto(blob,code,i){
+  const ext=blob.type==='image/webp'?'webp':'jpg';
+  const path=`${code}/${i+1}-${Date.now()}.${ext}`;
+  const r=await fetch(`${SUPABASE_URL}/storage/v1/object/item-photos/${path}`,{method:'POST',
+    headers:{apikey:SUPABASE_ANON,Authorization:`Bearer ${SUPABASE_ANON}`,'Content-Type':blob.type,'x-upsert':'true'},body:blob});
+  if(!r.ok) throw new Error('อัปโหลดรูปไม่สำเร็จ: '+(await r.text()));
+  return `${SUPABASE_URL}/storage/v1/object/public/item-photos/${path}`;
+}
+function deleteItemPhoto(url){
+  try{
+    const m=String(url||'').match(/\/object\/public\/item-photos\/(.+)$/); if(!m) return;
+    fetch(`${SUPABASE_URL}/storage/v1/object/item-photos/${m[1]}`,{method:'DELETE',headers:{apikey:SUPABASE_ANON,Authorization:`Bearer ${SUPABASE_ANON}`}}).catch(()=>{});
+  }catch(e){}
+}
+function photoZoom(url){
+  $('#ph-zoom').remove();
+  $('body').append(`<div id="ph-zoom" style="position:fixed;inset:0;background:rgba(15,23,42,.88);z-index:100000;display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));cursor:zoom-out"><img src="${url}" style="max-width:100%;max-height:100%;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.5)"></div>`);
+  $('#ph-zoom').on('click',()=>$('#ph-zoom').remove());
+}
+// วิดเจ็ตรูป 2 ช่อง: state={slots:[{url,blob?}|null,..]}  opts.readonly=true → แสดงอย่างเดียว
+function photoWidget(host,state,opts){
+  opts=opts||{}; const $h=$(host); if(!$h.length) return;
+  const ro=!!opts.readonly;
+  if(ro && !state.slots.some(s=>s&&s.url)){ $h.html('<span style="color:var(--s4);font-size:12px">–</span>'); return; }
+  const slot=i=>{
+    const s=state.slots[i];
+    if(ro && !(s&&s.url)) return '';
+    return `<div style="width:128px">
+      <div style="height:96px;border:1px dashed #cbd5e1;border-radius:10px;background:#f8fafc;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative">
+        ${s&&s.url?`<img src="${s.url}" data-z="${i}" style="width:100%;height:100%;object-fit:cover;cursor:zoom-in">${ro?'':`<button type="button" data-d="${i}" title="ลบรูป" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(15,23,42,.7);color:#fff;font-size:12px;line-height:1;cursor:pointer">✕</button>`}`:`<span style="font-size:11px;color:var(--s4)">รูปที่ ${i+1}</span>`}
+      </div>
+      ${ro?'':`<div style="display:flex;gap:5px;margin-top:5px">
+        <label class="btn btn-outline btn-xs" style="flex:1;justify-content:center;cursor:pointer;margin:0">📷 ถ่าย<input type="file" accept="image/*" capture="environment" data-i="${i}" style="display:none"></label>
+        <label class="btn btn-outline btn-xs" style="flex:1;justify-content:center;cursor:pointer;margin:0">🖼 เลือก<input type="file" accept="image/*" data-i="${i}" style="display:none"></label>
+      </div>`}
+    </div>`;
+  };
+  $h.html('<div style="display:flex;gap:10px;flex-wrap:wrap">'+slot(0)+slot(1)+'</div>');
+  $h.find('img[data-z]').on('click',function(){ photoZoom(this.src); });
+  if(ro) return;
+  $h.find('button[data-d]').on('click',function(){ state.slots[+this.dataset.d]=null; photoWidget(host,state,opts); });
+  $h.find('input[type=file]').on('change',async function(){
+    const f=this.files&&this.files[0]; const i=+this.dataset.i; this.value=''; if(!f) return;
+    try{
+      const blob=await compressImage(f);
+      if(state.slots[i]&&state.slots[i].blob&&state.slots[i].url) URL.revokeObjectURL(state.slots[i].url);
+      state.slots[i]={blob,url:URL.createObjectURL(blob)};
+      photoWidget(host,state,opts);
+    }catch(e){ Swal.fire({toast:true,position:'top-end',icon:'error',title:e.message||'ใส่รูปไม่สำเร็จ',showConfirmButton:false,timer:2500}); }
+  });
+}
+function renderFormPhotos(){ photoWidget('#f-photos',PH_FORM); }
+function resetFormPhotos(){ PH_FORM.slots=[null,null]; renderFormPhotos(); }
+function initEditPhotos(it,isAdmin){
+  const orig=[it.photo1_url||null,it.photo2_url||null];
+  PH_EDIT={code:it.item_code,orig,slots:orig.map(u=>u?{url:u}:null)};
+  photoWidget('#e-photos',PH_EDIT,{readonly:!isAdmin});
+}
+$(function(){ renderFormPhotos(); });
+
 // ===================== GLOBAL ERROR POPUP =====================
 // แสดงสาเหตุ error ทุกกรณีที่หลุดจาก try/catch (กันเงียบ) — กันเด้งซ้ำภายใน 4 วินาที
 let _lastErrAt = 0, _lastErrMsg = '';
@@ -1918,7 +2006,8 @@ $('#itemForm').on('submit',async function(e){
     refNo:$('#f-refNo').val(),
     barcode:$('#f-barcode').val(),
     tradeName:$('#f-tradeName').val(),
-    cgdCode:$('#f-cgdCode').val()||'', revCat:$('#f-revCat').val()||'',  // [1] - select2 returns the cgd_full string directly
+    cgdCode:$('#f-cgdCode').val()||'', revCat:$('#f-revCat').val()||'',
+    photos:PH_FORM.slots.map(s=>s&&s.blob?s:null),  // [1] - select2 returns the cgd_full string directly
     interfaceStatus:$('#f-interface').val(),vatGroup:$('#f-vatGroup').val(),
     purchaseItem:$('#f-purchaseItem').is(':checked')?'Y':'N',
     salesItem:$('#f-salesItem').is(':checked')?'Y':'N',
@@ -1937,6 +2026,7 @@ $('#itemForm').on('submit',async function(e){
   PS.brActive = null; // [BRPR] เคลียร์การผูก BR request เช่นกัน
   $('#f-itemName,#f-engName,#f-oldCode,#f-refNo,#f-barcode,#f-tradeName').val('');
   $('#f-cgdCode,#f-revCat').val('').trigger('change');
+  resetFormPhotos();
   Swal.fire({toast:true,position:'top-end',icon:'success',title:'เพิ่มลงตะกร้าแล้ว',showConfirmButton:false,timer:1500});
 });
 
@@ -1975,6 +2065,7 @@ function editCartItem(idx){
   $('#f-inventoryItem').prop('checked', (c.inventoryItem||'N')==='Y').trigger('change');
   $('#f-cgdCode').val(c.cgdCode||'').trigger('change');
   $('#f-revCat').val(c.revCat||'').trigger('change');
+  PH_FORM.slots=[(c.photos||[])[0]||null,(c.photos||[])[1]||null]; renderFormPhotos();
   $('#f-uomGroup').val(c.uomGroup||'').trigger('change');
   forceUomVal('#f-purUom', c.purUomId);
   forceUomVal('#f-salUom', c.salUomId);
@@ -2056,6 +2147,15 @@ $('#btn-process').on('click',async function(){
     await DB.post('items',inserts);
     try{ await DB.post('job_orders',{doc_num:docNum,creator_name:CU.name,status:'completed',created_at:new Date().toISOString()}); }
     catch(e){ try{await DB.delete('items',`doc_num=eq.${docNum}`);}catch(_){} throw e; }
+    // [photos] อัปโหลดรูปหลังบันทึกรายการสำเร็จ — ถ้าพลาดไม่ทำให้การออกรหัสล้ม
+    let photoFail=0;
+    for(let i=0;i<cart.length;i++){
+      const ph=cart[i].photos||[]; if(!ph.some(Boolean)) continue;
+      const upd={};
+      for(let k=0;k<2;k++){ if(ph[k]&&ph[k].blob){ try{ upd['photo'+(k+1)+'_url']=await uploadItemPhoto(ph[k].blob,generated[i],k); }catch(e){ photoFail++; console.error(e); } } }
+      if(Object.keys(upd).length){ try{ await DB.patch('items',`item_code=eq.${generated[i]}`,upd); }catch(e){ photoFail++; console.error(e); } }
+    }
+    if(photoFail) setTimeout(()=>Swal.fire({icon:'warning',title:'บันทึกรายการแล้ว แต่รูปบางส่วนไม่สำเร็จ',text:'ตรวจสอบว่ารัน SQL_PHOTOS.sql แล้ว และเปิดรูปซ้ำจากหน้าแก้ไข',confirmButtonColor:'#256e4e'}),1800);
     for(const[code,val]of Object.entries(runMap))
       await DB.patch('db_mstype',`group_code=eq.${code}`,{last_running_no:val});
       
@@ -2138,6 +2238,7 @@ async function clearCreateForm(){
   const cf = await Swal.fire({title:'ล้างข้อมูลในฟอร์ม?',text:'ข้อมูลที่กรอกไว้ทั้งหมดจะหายไป (ไม่กระทบตะกร้า)',icon:'warning',showCancelButton:true,confirmButtonText:'ล้างข้อมูล',cancelButtonText:'ยกเลิก',confirmButtonColor:'#d97706',reverseButtons:true});
   if(!cf.isConfirmed) return;
   try{ document.getElementById('itemForm').reset(); }catch(e){}
+  resetFormPhotos();
   $('#f-msType,#f-itemGroup,#f-uomGroup,#f-purUom,#f-salUom,#f-invUom,#f-dfltWh,#f-cgdCode,#f-revCat').val('').trigger('change');
   $('#f-itemName,#f-engName,#f-oldCode,#f-refNo,#f-barcode,#f-tradeName,#f-vatGroup').val('');
   $('#f-interface').val('N').trigger('change');
@@ -2319,8 +2420,9 @@ function openItemDetail(idx){
     <div class="detail-tabs" id="detail-tabs">
       <button type="button" class="dtab-btn active" data-tab="1">ข้อมูลทั่วไป</button>
       <button type="button" class="dtab-btn" data-tab="2">ราคา & คลัง</button>
+      <button type="button" class="dtab-btn" data-tab="3">📷 รูปภาพ</button>
     </div>
-    <div class="detail-tab-wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="detail-tab-wrap" data-view="info" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <table class="dtab-panel active" data-tab="1" style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:14px">
         <tr><td style="padding:5px 8px;color:var(--s5);width:38%">รหัสเดิม</td><td style="padding:5px 8px;font-weight:500">${it.u_ntt_old_code||'–'}</td></tr>
         <tr style="background:var(--s0)"><td style="padding:5px 8px;color:var(--s5)">Ref.No</td><td style="padding:5px 8px;font-family:monospace">${it.u_ntt_ref_no||'–'}</td></tr>
@@ -2349,6 +2451,7 @@ function openItemDetail(idx){
         <tr style="background:var(--s0)"><td style="padding:5px 8px;color:var(--s5)">เลขที่ใบงาน</td><td style="padding:5px 8px;font-family:monospace">${it.doc_num||'–'}</td></tr>
         <tr><td style="padding:5px 8px;color:var(--s5)">วันที่/เวลาที่ออกรหัส</td><td style="padding:5px 8px;font-size:12px">${it.created_at?new Date(it.created_at).toLocaleString('th-TH',{dateStyle:'long',timeStyle:'short'})+' น.':'–'}</td></tr>
       </table>
+      <div class="dtab-panel" data-tab="3" style="grid-column:1/-1;padding:4px 2px 14px"><div id="e-photos"></div></div>
     </div>
 
     <div style="display:flex;gap:7px;margin-top:14px;padding-top:14px;border-top:1px solid var(--s1);flex-wrap:wrap;justify-content:flex-end">
@@ -2410,7 +2513,7 @@ function openItemDetail(idx){
       <button class="btn btn-outline btn-sm" onclick="$('#edit-mode').hide();$('#view-mode').show();">ยกเลิก</button>
     </div>
   </div>`;
-  Swal.fire({title:'',html,showConfirmButton:false,showCloseButton:true,width:'850px',didOpen:()=>{ bindSingleStatusToggle(); bindChipCheckbox('#e-purchaseItem','#chip-e-purchaseItem'); bindChipCheckbox('#e-salesItem','#chip-e-salesItem'); bindChipCheckbox('#e-inventoryItem','#chip-e-inventoryItem'); bindChipCheckbox('#e-sap','#chip-e-sap'); bindChipCheckbox('#e-his','#chip-e-his'); bindChipCheckbox('#e-inactive','#chip-e-inactive'); bindDetailTabs(); }});
+  Swal.fire({title:'',html,showConfirmButton:false,showCloseButton:true,width:'850px',didOpen:()=>{ initEditPhotos(it,isAdmin); bindSingleStatusToggle(); bindChipCheckbox('#e-purchaseItem','#chip-e-purchaseItem'); bindChipCheckbox('#e-salesItem','#chip-e-salesItem'); bindChipCheckbox('#e-inventoryItem','#chip-e-inventoryItem'); bindChipCheckbox('#e-sap','#chip-e-sap'); bindChipCheckbox('#e-his','#chip-e-his'); bindChipCheckbox('#e-inactive','#chip-e-inactive'); bindDetailTabs(); }});
 }
 
 // [mobile-tabs] แท็บดูทีละหน้า — เฉพาะมือถือ (CSS ซ่อนบนจอกว้าง)
@@ -2419,6 +2522,7 @@ function bindDetailTabs(){
     const t=$(this).data('tab');
     $('.dtab-btn').removeClass('active'); $(this).addClass('active');
     $('.dtab-panel').removeClass('active').filter(function(){return String($(this).data('tab'))===String(t);}).addClass('active');
+    $('.detail-tab-wrap').attr('data-view', String(t)==='3'?'photo':'info');
     $('.swal2-html-container').scrollTop(0);
   });
 }
@@ -2488,6 +2592,13 @@ async function saveItemEditFull(code, btnEl) {
      };
 
      Swal.fire({title:'กำลังบันทึก...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+     if(window.PH_EDIT && PH_EDIT.code===code){ // [photos]
+       for(let k=0;k<2;k++){
+         const s=PH_EDIT.slots[k], o=PH_EDIT.orig[k];
+         if(s&&s.blob){ p['photo'+(k+1)+'_url']=await uploadItemPhoto(s.blob,code,k); if(o) deleteItemPhoto(o); }
+         else if(!s&&o){ p['photo'+(k+1)+'_url']=null; deleteItemPhoto(o); }
+       }
+     }
      await DB.patch('items', `item_code=eq.${code}`, p);
      const updated = await DB.get('items', `item_code=eq.${code}`);
      if(updated.length){
