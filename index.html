@@ -327,6 +327,8 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
 .swal2-html-container{max-height:none!important;overflow-y:visible!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important}
 /* [mobile-detail-tabs] ป็อบอัพเห็นเฉพาะเจ้าหน้าที่ต่อนนี้ — ดูแบบทีละแท็บเฉพาะในมือถือ */
 .detail-tabs{display:none}
+#hero-thumb img{display:block}
+@media(max-width:480px){#hero-thumb>div{width:76px!important;height:76px!important}}
 .detail-tab-wrap .dtab-panel[data-tab="3"]{display:none}
 .detail-tab-wrap .dtab-panel[data-tab="3"].active{display:block}
 @media(min-width:821px){
@@ -1438,10 +1440,31 @@ function deleteItemPhoto(url){
     fetch(`${SUPABASE_URL}/storage/v1/object/item-photos/${m[1]}`,{method:'DELETE',headers:{apikey:SUPABASE_ANON,Authorization:`Bearer ${SUPABASE_ANON}`}}).catch(()=>{});
   }catch(e){}
 }
-function photoZoom(url){
-  $('#ph-zoom').remove();
-  $('body').append(`<div id="ph-zoom" style="position:fixed;inset:0;background:rgba(15,23,42,.88);z-index:100000;display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));cursor:zoom-out"><img src="${url}" style="max-width:100%;max-height:100%;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.5)"></div>`);
-  $('#ph-zoom').on('click',()=>$('#ph-zoom').remove());
+function photoZoom(urls,idx){
+  urls=[].concat(urls||[]).filter(Boolean); if(!urls.length) return;
+  let i=Math.min(Math.max(+idx||0,0),urls.length-1);
+  $('#ph-zoom').remove(); $(document).off('keydown.phz');
+  const multi=urls.length>1;
+  const arrow=(side,ch)=>`<button type="button" data-nav="${side}" style="position:absolute;${side}:max(10px,env(safe-area-inset-${side}));top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;border:none;background:rgba(255,255,255,.2);color:#fff;font-size:24px;cursor:pointer;backdrop-filter:blur(4px)">${ch}</button>`;
+  $('body').append(`<div id="ph-zoom" style="position:fixed;inset:0;background:rgba(15,23,42,.92);z-index:100000;display:flex;align-items:center;justify-content:center;padding:calc(56px + env(safe-area-inset-top)) 16px calc(56px + env(safe-area-inset-bottom));touch-action:pan-y">
+    <img id="ph-zoom-img" src="${urls[i]}" style="max-width:100%;max-height:100%;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.5);user-select:none">
+    <button type="button" data-close="1" style="position:absolute;top:calc(12px + env(safe-area-inset-top));right:14px;width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.2);color:#fff;font-size:18px;cursor:pointer">✕</button>
+    ${multi?arrow('left','‹')+arrow('right','›')+'<div id="ph-zoom-cnt" style="position:absolute;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);color:#fff;font-size:13px;font-weight:600;padding:3px 14px;border-radius:20px"></div>':''}
+  </div>`);
+  const $z=$('#ph-zoom');
+  const show=n=>{ i=(n+urls.length)%urls.length; $('#ph-zoom-img').attr('src',urls[i]); $('#ph-zoom-cnt').text((i+1)+' / '+urls.length); };
+  const close=()=>{ $z.remove(); $(document).off('keydown.phz'); };
+  if(multi) show(i);
+  $z.on('click',ev=>{
+    const t=ev.target;
+    if(t.dataset&&t.dataset.nav){ ev.stopPropagation(); show(i+(t.dataset.nav==='right'?1:-1)); return; }
+    if(t.id==='ph-zoom-img'&&multi){ show(i+1); return; }  // แตะรูป = รูปถัดไป
+    close();
+  });
+  $(document).on('keydown.phz',ev=>{ if(ev.key==='Escape')close(); else if(multi&&ev.key==='ArrowRight')show(i+1); else if(multi&&ev.key==='ArrowLeft')show(i-1); });
+  let sx=null; // ปัดซ้าย/ขวาบนมือถือ
+  $z[0].addEventListener('touchstart',ev=>{ sx=ev.touches[0].clientX; },{passive:true});
+  $z[0].addEventListener('touchend',ev=>{ if(sx==null||!multi)return; const dx=ev.changedTouches[0].clientX-sx; sx=null; if(Math.abs(dx)>50){ ev._sw=1; show(i+(dx<0?1:-1)); $z.data('sw',Date.now()); } },{passive:true});
 }
 // วิดเจ็ตรูป 2 ช่อง: state={slots:[{url,blob?}|null,..]}  opts.readonly=true → แสดงอย่างเดียว
 function photoWidget(host,state,opts){
@@ -1462,7 +1485,7 @@ function photoWidget(host,state,opts){
     </div>`;
   };
   $h.html('<div style="display:flex;gap:10px;flex-wrap:wrap">'+slot(0)+slot(1)+'</div>');
-  $h.find('img[data-z]').on('click',function(){ photoZoom(this.src); });
+  $h.find('img[data-z]').on('click',function(){ const us=state.slots.map(s=>s&&s.url).filter(Boolean); photoZoom(us,us.indexOf(this.src)); });
   if(ro) return;
   $h.find('button[data-d]').on('click',function(){ state.slots[+this.dataset.d]=null; photoWidget(host,state,opts); });
   $h.find('input[type=file]').on('change',async function(){
@@ -1475,11 +1498,22 @@ function photoWidget(host,state,opts){
     }catch(e){ Swal.fire({toast:true,position:'top-end',icon:'error',title:e.message||'ใส่รูปไม่สำเร็จ',showConfirmButton:false,timer:2500}); }
   });
 }
+function heroThumb(st){
+  const urls=st.slots.map(s=>s&&s.url).filter(Boolean);
+  const $t=$('#hero-thumb'); if(!$t.length) return;
+  if(!urls.length){ $t.html('<div style="width:104px;height:104px;border:1px dashed #94a3b8;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;font-size:11px;gap:4px;background:rgba(255,255,255,.6)"><span style="font-size:22px">📷</span>ไม่มีรูป</div>'); return; }
+  $t.html(`<div style="position:relative;width:104px;height:104px;cursor:zoom-in" title="กดเพื่อขยาย">
+    <img src="${urls[0]}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;border:2px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.18)">
+    ${urls.length>1?`<span style="position:absolute;right:6px;bottom:6px;background:rgba(15,23,42,.75);color:#fff;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:20px">1/${urls.length}</span>`:''}
+  </div>`);
+  $t.find('div').first().on('click',()=>photoZoom(urls,0));
+}
 function renderFormPhotos(){ photoWidget('#f-photos',PH_FORM); }
 function resetFormPhotos(){ PH_FORM.slots=[null,null]; renderFormPhotos(); }
 function initEditPhotos(it,isAdmin){
   const orig=[it.photo1_url||null,it.photo2_url||null];
   PH_EDIT={code:it.item_code,orig,slots:orig.map(u=>u?{url:u}:null)};
+  heroThumb(PH_EDIT);
   photoWidget('#e-photos',PH_EDIT,{readonly:true});          // แท็บรูปภาพในหน้าดูรายละเอียด (ดูอย่างเดียว)
   if(isAdmin) photoWidget('#e-photos-edit',PH_EDIT);         // ในฟอร์มแก้ไข (ถ่าย/เลือก/ลบ)
 }
@@ -2407,7 +2441,8 @@ function openItemDetail(idx){
   <div id="view-mode" style="text-align:left;font-size:13px">
     ${inactiveBanner}
     ${prBanner}
-    <div style="background:${isInactive?'var(--r0)':'var(--g0)'};border:1px solid ${isInactive?'var(--r1)':'var(--g1)'};border-radius:var(--rad);padding:12px 14px;margin-bottom:14px">
+    <div style="background:${isInactive?'var(--r0)':'var(--g0)'};border:1px solid ${isInactive?'var(--r1)':'var(--g1)'};border-radius:var(--rad);padding:12px 14px;margin-bottom:14px;display:flex;gap:14px;align-items:flex-start">
+      <div style="flex:1;min-width:0">
       <div style="font-size:20px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:${isInactive?'var(--r6)':'var(--g7)'};display:flex;align-items:center">${it.item_code}<span class="copy-ic" title="คัดลอกรหัส" data-copy="${escHtml(it.item_code||'')}" onclick="return copyText(this.dataset.copy,'รหัส',event)"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></span></div>
       <div style="font-size:14px;font-weight:600;margin-top:3px;display:flex;align-items:flex-start"><span>${it.item_name}</span><span class="copy-ic" title="คัดลอกชื่อรายการ" data-copy="${escHtml(it.item_name||'')}" onclick="return copyText(this.dataset.copy,'ชื่อรายการ',event)"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></span></div>
       ${it.english_name?`<div style="color:var(--s5);font-size:12px;margin-top:1px">${it.english_name}</div>`:''}
@@ -2417,6 +2452,8 @@ function openItemDetail(idx){
         <span class="badge ${it.sync_sap?'bg':'bs'}" style="font-size:12px">${it.sync_sap?'✅ SAP':'– SAP'}</span>
         <span class="badge ${it.sync_his?'bg':'bs'}" style="font-size:12px">${it.sync_his?'✅ HIS':'– HIS'}</span>
       </div>
+          </div>
+      <div id="hero-thumb" style="flex:none"></div>
     </div>
     <div class="detail-tabs" id="detail-tabs">
       <button type="button" class="dtab-btn active" data-tab="1">ข้อมูลทั่วไป</button>
