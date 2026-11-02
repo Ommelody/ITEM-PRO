@@ -1608,7 +1608,7 @@ $('#reg-form').on('submit',async function(e){
   if(pass.length<6)return Swal.fire('แจ้งเตือน','รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร','warning');
   Swal.fire({title:'กำลังสมัคร...',didOpen:()=>Swal.showLoading()});
   try{
-    await DB.post('users',{username:user,password:pass,name:name,role:'staff'});
+    await DB.post('users',{username:user,password:pass,name:name,role:'staff'});if(typeof logAction==='function')logAction('register',{username:user,name},'user',user);
     Swal.fire('สำเร็จ!','ลงทะเบียนเรียบร้อย กรุณาเข้าสู่ระบบ','success');
     switchAuthTab('login');this.reset();
   }catch(e){
@@ -1648,11 +1648,29 @@ $(function(){ restoreSession(); });
 
 // ===================== ACTIVITY LOG VIEWER =====================
 PS.logs = { data: [] };
-const LOG_LABELS = {login:'เข้าสู่ระบบ',logout:'ออกจากระบบ',create_job:'ออกรหัส/บันทึกใบงาน',edit_item:'แก้ไขไอเทม',approve_item:'อนุมัติไอเทม',delete_item:'ลบไอเทม',delete_job:'ลบใบงาน',master_add:'เพิ่มข้อมูลหลัก',master_delete:'ลบข้อมูลหลัก',export:'Export ข้อมูล',pr_issue:'ส่งรหัสกลับ PR ORDER',br_issue:'ส่งรหัสกลับ BRPR'};
+const LOG_LABELS = {login:'เข้าสู่ระบบ',logout:'ออกจากระบบ',create_job:'ออกรหัส/บันทึกใบงาน',edit_item:'แก้ไขไอเทม',approve_item:'อนุมัติไอเทม',delete_item:'ลบไอเทม',delete_job:'ลบใบงาน',master_add:'เพิ่มข้อมูลหลัก',master_delete:'ลบข้อมูลหลัก',export:'Export ข้อมูล',pr_issue:'ส่งรหัสกลับ PR ORDER',br_issue:'ส่งรหัสกลับ BRPR',import:'นำเข้าข้อมูล',register:'สมัครผู้ใช้ใหม่',change_role:'เปลี่ยนสิทธิ์ผู้ใช้',delete_user:'ลบผู้ใช้',edit_profile:'แก้ไขโปรไฟล์',update_prices:'อัปเดตราคา (นำเข้า)',delete_all:'ลบข้อมูลทั้งหมด',rev_save:'หมวดรายได้ (เพิ่ม/แก้ไข)',rev_delete:'ลบหมวดรายได้',cgd_import:'นำเข้ารหัสกรมบัญชีกลาง',cgd_delete:'ลบรหัสกรมบัญชีกลาง',client_error:'ข้อผิดพลาดในระบบ'};
+const FLD_LABELS = {item_name:'ชื่อสินค้า',item_name_en:'ชื่อสินค้า (EN)',trade_name:'ชื่อการค้า',alias_name:'Alias',old_code:'รหัสเดิม',ref_no:'Ref.No',barcode:'Barcode',u_ntt_remark:'หมายเหตุ',cgd_code:'รหัสกรมบัญชีกลาง',u_ntt_revenue_cat:'หมวดรายได้',u_ntt_ms_type:'MSType',u_ntt_asset_pur:'MSType (ครุภัณฑ์)',items_group_code:'กลุ่มบัญชี',items_group_text:'ชื่อกลุ่มบัญชี',default_warehouse:'คลัง Default',inventory_uom:'หน่วยคลัง',inventory_uom_entry:'หน่วยคลัง (Entry)',sys_uom_name:'หน่วยนับ',purchase_vat_group:'VAT Group',u_ntt_interface:'Interface',purchase_item:'PurchaseItem',sales_item:'SalesItem',inventory_item:'InventoryItem',sys_cost:'ราคาทุน',sys_price:'ราคาขาย',status:'สถานะอนุมัติ',sync_sap:'Sync SAP',sync_his:'Sync HIS',is_inactive:'Inactive',issue_method:'Issue Method',photo1_url:'รูปภาพ 1',photo2_url:'รูปภาพ 2'};
+function fmtVal(v){ if(v===null||v===undefined||v==='') return '–'; if(v===true) return 'ใช่'; if(v===false) return 'ไม่'; return String(v); }
+// เทียบค่าเดิม/ใหม่ → [{f,from,to}] เฉพาะที่เปลี่ยนจริง
+function diffFields(oldO, newO){
+  const out=[]; oldO=oldO||{};
+  Object.keys(newO||{}).forEach(k=>{
+    let a=oldO[k], b=newO[k];
+    const e=v=>(v===null||v===undefined||v==='');
+    if(e(a)&&e(b)) return;
+    if(!e(a)&&!e(b)&&!isNaN(Number(a))&&!isNaN(Number(b))&&typeof a!=='boolean'&&typeof b!=='boolean'){ if(Number(a)===Number(b)) return; }
+    else if(String(a)===String(b)) return;
+    if(/^photo\d_url$/.test(k)){ out.push({f:FLD_LABELS[k],from:a?'มีรูป':'–',to:b?'เปลี่ยน/เพิ่มรูปใหม่':'ลบรูป'}); return; }
+    out.push({f:FLD_LABELS[k]||k,from:fmtVal(a),to:fmtVal(b)});
+  });
+  return out;
+}
 function logLabel(a){ return LOG_LABELS[a] || a || '–'; }
 function fmtLogDetail(d){
   if(d==null||d==='') return '–';
-  try{ const o=JSON.parse(d); return Object.entries(o).map(([k,v])=>`${k}: ${Array.isArray(v)?v.join(', '):v}`).join(' · '); }
+  try{ const o=JSON.parse(d);
+    if(Array.isArray(o.changes)) return (o.code?o.code+' · ':'')+(o.status==='approved'&&o.changes.length===0?'อนุมัติ':'แก้ไข '+o.changes.length+' รายการ: '+o.changes.map(c=>c.f).slice(0,6).join(', ')+(o.changes.length>6?' ...':''));
+    return Object.entries(o).map(([k,v])=>`${k}: ${Array.isArray(v)?v.join(', '):v}`).join(' · '); }
   catch(e){ return String(d); }
 }
 function clearLogFilter(){ $('#log-start,#log-end,#log-search').val(''); $('#log-action').val(''); loadLogs(); }
@@ -1670,7 +1688,7 @@ async function loadLogs(){
     PS.logs.data = rows;
     $('#log-total').text(`ทั้งหมด ${rows.length.toLocaleString()} รายการ`);
     if(!rows.length){ $('#logs-tbody').html('<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--s4)">ไม่พบบันทึกตามเงื่อนไข</td></tr>'); return; }
-    $('#logs-tbody').html(rows.slice(0,1000).map(r=>`<tr>
+    $('#logs-tbody').html(rows.slice(0,1000).map((r,ri)=>`<tr onclick="showLogDetail(${ri})" style="cursor:pointer" title="คลิกเพื่อดูรายละเอียด">
       <td class="mono" style="font-size:11px;white-space:nowrap">${new Date(r.created_at).toLocaleString('th-TH')}</td>
       <td><span class="badge bg">${logLabel(r.action)}</span></td>
       <td style="font-size:12px">${escHtml(fmtLogDetail(r.detail))}${r.target_id?` <span style="color:var(--s4)">[${escHtml(r.target_id)}]</span>`:''}</td>
@@ -1679,6 +1697,23 @@ async function loadLogs(){
   }catch(err){
     $('#logs-tbody').html('<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--r6)">โหลดไม่สำเร็จ — ตรวจสอบว่าสร้างตาราง activity_logs แล้วหรือยัง (ดู ACTIVITY_LOG.md)</td></tr>');
   }
+}
+function showLogDetail(i){
+  const r=(PS.logs.data||[])[i]; if(!r) return;
+  let o=null; try{ o=JSON.parse(r.detail); }catch(e){}
+  const th='padding:6px 10px;text-align:left;font-size:11.5px;color:var(--s5);background:#f8fafc;font-weight:600';
+  const td='padding:6px 10px;font-size:12.5px;border-top:1px solid var(--s1);word-break:break-word';
+  let body='';
+  if(o && Array.isArray(o.changes)){
+    body=(o.changes.length
+      ?`<table style="width:100%;border-collapse:collapse;border:1px solid var(--s1);border-radius:8px;overflow:hidden"><thead><tr><th style="${th}">ฟิลด์</th><th style="${th}">ค่าเดิม</th><th style="${th}">ค่าใหม่</th></tr></thead><tbody>${o.changes.map(c=>`<tr><td style="${td};font-weight:600">${escHtml(c.f)}</td><td style="${td};color:#b91c1c">${escHtml(c.from)}</td><td style="${td};color:#15803d;font-weight:600">${escHtml(c.to)}</td></tr>`).join('')}</tbody></table>`
+      :'<div style="color:var(--s5);font-size:12.5px">ไม่มีฟิลด์ที่เปลี่ยนแปลง (กดบันทึกโดยไม่แก้ไข)</div>');
+  } else if(o && typeof o==='object'){
+    body=`<table style="width:100%;border-collapse:collapse;border:1px solid var(--s1)"><tbody>${Object.entries(o).map(([k,v])=>`<tr><td style="${td};width:34%;color:var(--s5);font-weight:600">${escHtml(FLD_LABELS[k]||k)}</td><td style="${td}">${escHtml(typeof v==='object'&&v!==null?JSON.stringify(v):Array.isArray(v)?v.join(', '):fmtVal(v))}</td></tr>`).join('')}</tbody></table>`;
+  } else body=`<div style="font-size:12.5px">${escHtml(r.detail||'–')}</div>`;
+  const meta=(l,v)=>`<div style="display:flex;gap:8px;font-size:12.5px;padding:3px 0"><span style="color:var(--s5);width:84px;flex:none">${l}</span><span style="font-weight:600;word-break:break-word">${v}</span></div>`;
+  Swal.fire({title:logLabel(r.action),width:560,confirmButtonText:'ปิด',confirmButtonColor:'#256e4e',
+    html:`<div style="text-align:left">${meta('วันที่/เวลา',new Date(r.created_at).toLocaleString('th-TH'))}${meta('ผู้ทำรายการ',escHtml((r.actor_name||r.actor_username||'–')+(r.actor_role?' ('+r.actor_role+')':'')))}${r.target_id?meta('เป้าหมาย',escHtml(r.target_id)):''}<div style="margin-top:10px;max-height:50vh;overflow:auto">${body}</div></div>`});
 }
 function exportLogsExcel(){
   const data = PS.logs.data||[];
@@ -2638,6 +2673,7 @@ async function saveItemEditFull(code, btnEl) {
          else if(!s&&o){ p['photo'+(k+1)+'_url']=null; deleteItemPhoto(o); }
        }
      }
+     const _before = (PS.search.data||[]).find(r=>r.item_code===code) || null;
      await DB.patch('items', `item_code=eq.${code}`, p);
      const updated = await DB.get('items', `item_code=eq.${code}`);
      if(updated.length){
@@ -2652,7 +2688,7 @@ async function saveItemEditFull(code, btnEl) {
           sendCodeBackToBR(updated[0]);
         }
         if(typeof logAction==='function'){
-          logAction(p.status==='approved'?'approve_item':'edit_item', {code, status:p.status}, 'item', code);
+          logAction(p.status==='approved'&&_before&&_before.status!=='approved'?'approve_item':'edit_item', {code, name:updated[0].item_name, status:p.status, changes:diffFields(_before,p)}, 'item', code);
         }
      }
      Swal.close(); // ปิดป็อบอัพฟอร์มแก้ไขทันทีที่บันทึกสำเร็จ ก่อนแสดง toast ยืนยัน
@@ -2767,6 +2803,7 @@ async function confirmDeleteAllJobs(){
     await DB.delete('items','id=gte.0');
     await DB.delete('job_orders','id=gte.0');
     try{ await DB.patch('db_mstype','last_running_no=gt.0',{last_running_no:0}); }catch(e){console.warn(e);}
+    if(typeof logAction==='function')logAction('delete_all',{note:"ลบรายการและใบงานทั้งหมด รีเซ็ตเลขรัน"},'system',"all");
     Swal.fire('เสร็จสิ้น','ลบข้อมูลทั้งหมดเรียบร้อย','success');
     loadHistory();
   }catch(e){Swal.fire('Error',e.message,'error');}
@@ -2923,13 +2960,13 @@ async function loadUsers(){
 async function changeRole(id,newRole,username){
   const cf=await Swal.fire({title:`เปลี่ยนสิทธิ์ "${username}" เป็น ${newRole.toUpperCase()}?`,icon:'question',showCancelButton:true,confirmButtonColor:'#256e4e',confirmButtonText:'ยืนยัน',cancelButtonText:'ยกเลิก'});
   if(!cf.isConfirmed)return;
-  try{await DB.patch('users',`id=eq.${id}`,{role:newRole});loadUsers();}catch(e){Swal.fire('Error',e.message,'error');}
+  try{await DB.patch('users',`id=eq.${id}`,{role:newRole});if(typeof logAction==='function')logAction('change_role',{username,new_role:newRole},'user',username);loadUsers();}catch(e){Swal.fire('Error',e.message,'error');}
 }
 
 async function deleteUser(id,username){
   const cf=await Swal.fire({title:`ลบผู้ใช้ "${username}"?`,icon:'warning',showCancelButton:true,confirmButtonColor:'#dc2626',confirmButtonText:'ลบ',cancelButtonText:'ยกเลิก'});
   if(!cf.isConfirmed)return;
-  try{await DB.delete('users',`id=eq.${id}`);loadUsers();}catch(e){Swal.fire('Error',e.message,'error');}
+  try{await DB.delete('users',`id=eq.${id}`);if(typeof logAction==='function')logAction('delete_user',{username},'user',username);loadUsers();}catch(e){Swal.fire('Error',e.message,'error');}
 }
 
 // ===================== MASTER — ADD / DEL =====================
@@ -3121,6 +3158,7 @@ async function processExcelImport(type){
       if(type==='price'){
         let cnt=0;
         for(const row of json){if(row.ItemCode && (row.Cost===undefined||row.Cost===''||!isNaN(parseFloat(String(row.Cost).replace(/,/g,''))))){const c=parseFloat(String(row.Cost??'').replace(/,/g,''));const s=parseFloat(String(row.Sell??'').replace(/,/g,''));await DB.patch('items',`item_code=eq.${row.ItemCode}`,{sys_cost:isNaN(c)?0:c,sys_price:isNaN(s)?0:s});cnt++;}}
+        if(typeof logAction==='function')logAction('update_prices',{count:cnt},'item',"price");
         Swal.fire('สำเร็จ',`อัปเดตราคา ${cnt} รายการ`,'success');
       }else{
         const docNum=`IMP-${new Date().toISOString().slice(2,10).replace(/-/g,'')}-${Math.floor(1000+Math.random()*9000)}`;
@@ -3471,6 +3509,7 @@ async function saveProfile(){
     const updates = {name};
     if(pass) updates.password = pass;
     await DB.patch('users',`id=eq.${CU.id}`,updates);
+    if(typeof logAction==='function')logAction('edit_profile',{name,password_changed:!!pass},'user',CU.username);
     CU.name = name;
     if(pass) CU.password = pass;
     if(newAv) localStorage.setItem('profile_avatar', newAv);
@@ -3533,6 +3572,7 @@ async function editRevCat(id){
   if(!res.isConfirmed) return;
   try{
     if(r) await DB.patch('db_revenue_cats',`id=eq.${r.id}`,res.value); else await DB.post('db_revenue_cats',res.value);
+    if(typeof logAction==='function')logAction('rev_save',{mode:r?"แก้ไข":"เพิ่ม",from:r?{rev_code:r.rev_code,rev_name:r.rev_name}:undefined,to:res.value},'master',res.value.rev_code);
     await loadRevCats();
   }catch(e){ Swal.fire('Error',e.message||String(e),'error'); }
 }
@@ -3540,7 +3580,7 @@ async function deleteRevCat(id){
   const r=REV_DATA.find(x=>String(x.id)===String(id)); if(!r) return;
   const cf=await Swal.fire({title:'ลบหมวดรายได้?',text:r.rev_full,icon:'warning',showCancelButton:true,confirmButtonColor:'#dc2626',confirmButtonText:'ลบ',cancelButtonText:'ยกเลิก'});
   if(!cf.isConfirmed) return;
-  try{ await DB.delete('db_revenue_cats',`id=eq.${id}`); await loadRevCats(); }
+  try{ await DB.delete('db_revenue_cats',`id=eq.${id}`); if(typeof logAction==='function')logAction('rev_delete',{name:r.rev_full},'master',r.rev_code); await loadRevCats(); }
   catch(e){ Swal.fire('Error',e.message||String(e),'error'); }
 }
 async function loadCGDPage(){
@@ -3615,6 +3655,7 @@ async function importCGDExcel(){
         await DB.post('db_cgd_codes', inserts.slice(i,i+100));
         done += Math.min(100,inserts.length-i);
       }
+      if(typeof logAction==='function') logAction('cgd_import',{count:inserts.length},'master','cgd');
       Swal.fire('สำเร็จ!',`นำเข้า ${done} รายการเรียบร้อย`,'success');
       document.getElementById('cgd-file').value='';
       loadCGDPage();
@@ -3627,6 +3668,7 @@ async function deleteCGDRow(id){
   if(!confirm('ลบรายการนี้?')) return;
   try{
     await DB.delete('db_cgd_codes',`id=eq.${id}`);
+    if(typeof logAction==='function')logAction('cgd_delete',{id},'master',id);
     CGD_DATA = CGD_DATA.filter(r=>String(r.id)!==String(id));
     CGD_PS.filtered = CGD_PS.filtered.filter(r=>String(r.id)!==String(id));
     renderCGDTable(CGD_PS.cur);
@@ -3640,6 +3682,7 @@ async function clearAllCGD(){
   if(!cf.isConfirmed)return;
   try{
     await DB.delete('db_cgd_codes','id=gte.0');
+    if(typeof logAction==='function')logAction('cgd_delete',{all:true},'master',"all");
     CGD_DATA=[];CGD_PS.filtered=[];
     renderCGDTable(1);
     populateCGDDropdown();
