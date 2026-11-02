@@ -325,6 +325,18 @@ body.mb-open .sidebar-backdrop{display:block;opacity:1}
 /* [scroll-fix] ป็อบอัพ SweetAlert ต้องเลื่อนได้เสมอ ไม่ผูกกับ breakpoint — กันเคสจอกว้างผิดคาด/แนวนอน */
 .swal2-popup{max-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 24px)!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;overscroll-behavior:contain!important}
 .swal2-html-container{max-height:none!important;overflow-y:visible!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important}
+/* [perf-scroll] เลื่อนชั้นเดียวที่ตัวป็อบอัพ ไม่ซ้อน ไม่ทะลุหน้าหลัก ใช้ dvh กันความสูงกระโดด */
+.swal2-popup{max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 24px)!important;overscroll-behavior:contain!important;touch-action:pan-y!important;will-change:scroll-position;contain:content}
+.swal2-html-container{overflow:visible!important;max-height:none!important;overscroll-behavior:auto!important;touch-action:auto!important}
+.swal2-container{overscroll-behavior:contain;touch-action:none}
+.swal2-container .swal2-popup{touch-action:pan-y!important}
+html.swal2-shown,body.swal2-shown{overflow:hidden!important;overscroll-behavior:none}
+button,.btn,a,label,select,input,[onclick],.dtab-btn,tr[onclick]{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+@media(hover:none) and (pointer:coarse){
+  .swal2-popup,.card,.sidebar{box-shadow:0 2px 10px rgba(0,0,0,.12)!important}
+  .detail-tabs{position:static!important}
+  *{scroll-behavior:auto!important}
+}
 /* [mobile-detail-tabs] ป็อบอัพเห็นเฉพาะเจ้าหน้าที่ต่อนนี้ — ดูแบบทีละแท็บเฉพาะในมือถือ */
 .detail-tabs{display:none}
 #hero-thumb img{display:block}
