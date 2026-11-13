@@ -347,6 +347,7 @@ button,.btn,a,label,select,input,[onclick],.dtab-btn,tr[onclick]{touch-action:ma
 .ph-tbl th{background:var(--s0);color:var(--s5);font-weight:600;text-align:left;padding:6px 8px;white-space:nowrap;position:sticky;top:0}
 .ph-tbl td{padding:6px 8px;border-top:1px solid var(--s1);vertical-align:top}
 .ph-sub{color:var(--s5);font-size:10.5px}
+tr.mrow{cursor:pointer}tr.mrow:hover td{background:#f0fdf4}
 @media(min-width:821px){
   .detail-tabs{display:flex!important;gap:6px;margin-bottom:10px;border-bottom:1px solid var(--s1);padding-bottom:10px}
   .dtab-btn{padding:7px 16px;border:1px solid var(--s2);background:#fff;border-radius:20px;font-size:12.5px;font-weight:600;color:var(--s6);cursor:pointer;font-family:inherit}
@@ -1834,7 +1835,7 @@ $(function(){ restoreSession(); });
 
 // ===================== ACTIVITY LOG VIEWER =====================
 PS.logs = { data: [] };
-const LOG_LABELS = {login:'เข้าสู่ระบบ',logout:'ออกจากระบบ',create_job:'ออกรหัส/บันทึกใบงาน',edit_item:'แก้ไขไอเทม',approve_item:'อนุมัติไอเทม',delete_item:'ลบไอเทม',delete_job:'ลบใบงาน',master_add:'เพิ่มข้อมูลหลัก',master_delete:'ลบข้อมูลหลัก',export:'Export ข้อมูล',pr_issue:'ส่งรหัสกลับ PR ORDER',br_issue:'ส่งรหัสกลับ BRPR',import:'นำเข้าข้อมูล',import_history:'นำเข้าประวัติการซื้อ',register:'สมัครผู้ใช้ใหม่',change_role:'เปลี่ยนสิทธิ์ผู้ใช้',delete_user:'ลบผู้ใช้',edit_profile:'แก้ไขโปรไฟล์',update_prices:'อัปเดตราคา (นำเข้า)',delete_all:'ลบข้อมูลทั้งหมด',rev_save:'หมวดรายได้ (เพิ่ม/แก้ไข)',rev_delete:'ลบหมวดรายได้',cgd_import:'นำเข้ารหัสกรมบัญชีกลาง',cgd_delete:'ลบรหัสกรมบัญชีกลาง',client_error:'ข้อผิดพลาดในระบบ'};
+const LOG_LABELS = {login:'เข้าสู่ระบบ',logout:'ออกจากระบบ',create_job:'ออกรหัส/บันทึกใบงาน',edit_item:'แก้ไขไอเทม',approve_item:'อนุมัติไอเทม',delete_item:'ลบไอเทม',delete_job:'ลบใบงาน',master_add:'เพิ่มข้อมูลหลัก',master_delete:'ลบข้อมูลหลัก',export:'Export ข้อมูล',pr_issue:'ส่งรหัสกลับ PR ORDER',br_issue:'ส่งรหัสกลับ BRPR',import:'นำเข้าข้อมูล',import_history:'นำเข้าประวัติการซื้อ',master_edit:'ข้อมูลหลัก (แก้ไขชื่อ)',register:'สมัครผู้ใช้ใหม่',change_role:'เปลี่ยนสิทธิ์ผู้ใช้',delete_user:'ลบผู้ใช้',edit_profile:'แก้ไขโปรไฟล์',update_prices:'อัปเดตราคา (นำเข้า)',delete_all:'ลบข้อมูลทั้งหมด',rev_save:'หมวดรายได้ (เพิ่ม/แก้ไข)',rev_delete:'ลบหมวดรายได้',cgd_import:'นำเข้ารหัสกรมบัญชีกลาง',cgd_delete:'ลบรหัสกรมบัญชีกลาง',client_error:'ข้อผิดพลาดในระบบ'};
 const FLD_LABELS = {item_name:'ชื่อสินค้า',item_name_en:'ชื่อสินค้า (EN)',trade_name:'ชื่อการค้า',alias_name:'Alias',old_code:'รหัสเดิม',ref_no:'Ref.No',barcode:'Barcode',u_ntt_remark:'หมายเหตุ',cgd_code:'รหัสกรมบัญชีกลาง',u_ntt_revenue_cat:'หมวดรายได้',u_ntt_ms_type:'MSType',u_ntt_asset_pur:'MSType (ครุภัณฑ์)',items_group_code:'กลุ่มบัญชี',items_group_text:'ชื่อกลุ่มบัญชี',default_warehouse:'คลัง Default',inventory_uom:'หน่วยคลัง',inventory_uom_entry:'หน่วยคลัง (Entry)',sys_uom_name:'หน่วยนับ',purchase_vat_group:'VAT Group',u_ntt_interface:'Interface',purchase_item:'PurchaseItem',sales_item:'SalesItem',inventory_item:'InventoryItem',sys_cost:'ราคาทุน',sys_price:'ราคาขาย',status:'สถานะอนุมัติ',sync_sap:'Sync SAP',sync_his:'Sync HIS',is_inactive:'Inactive',issue_method:'Issue Method',photo1_url:'รูปภาพ 1',photo2_url:'รูปภาพ 2'};
 function fmtVal(v){ if(v===null||v===undefined||v==='') return '–'; if(v===true) return 'ใช่'; if(v===false) return 'ไม่'; return String(v); }
 // เทียบค่าเดิม/ใหม่ → [{f,from,to}] เฉพาะที่เปลี่ยนจริง
@@ -2019,26 +2020,26 @@ async function loadMasterData(){
 }
 
 function renderMasterTables(ms,ig,ug,um,wh){
-  $('#mt-mstype').html(ms.map(r=>`<tr>
+  $('#mt-mstype').html(ms.map(r=>`<tr data-m="mstype" data-k="${r.group_code}" class="mrow">
     <td class="mono">${r.group_code}</td>
     <td>${r.group_name}</td>
     <td class="mono">${r.last_running_no}</td>
     <td><button class="btn btn-outline btn-xs" onclick="viewItemsInMaster('${r.group_code.startsWith('8') ? 'u_ntt_asset_pur' : 'u_ntt_ms_type'}','${r.group_code}','MSType: ${r.group_name}')">🔍 ดูพัสดุ</button></td>
-    <td><button class="btn btn-danger btn-xs" onclick="delMaster('db_mstype','group_code','${r.group_code}')">ลบ</button></td>
+    <td style="white-space:nowrap"><button class="btn btn-outline btn-xs" onclick="editMaster('mstype','${r.group_code}')" title="แก้ไขชื่อ">✏️ แก้ไข</button> <button class="btn btn-danger btn-xs" onclick="delMaster('db_mstype','group_code','${r.group_code}')">ลบ</button></td>
   </tr>`).join(''));
   
-  $('#mt-itemgroup').html(ig.map(r=>`<tr>
+  $('#mt-itemgroup').html(ig.map(r=>`<tr data-m="itemgroup" data-k="${r.number}" class="mrow">
     <td class="mono">${r.number}</td>
     <td>${r.group_name}</td>
     <td><button class="btn btn-outline btn-xs" onclick="viewItemsInMaster('items_group_code','${r.number}','กลุ่มบัญชี: ${r.group_name}')">🔍 ดูพัสดุ</button></td>
-    <td><button class="btn btn-danger btn-xs" onclick="delMaster('db_item_group','number','${r.number}')">ลบ</button></td>
+    <td style="white-space:nowrap"><button class="btn btn-outline btn-xs" onclick="editMaster('itemgroup','${r.number}')" title="แก้ไขชื่อ">✏️ แก้ไข</button> <button class="btn btn-danger btn-xs" onclick="delMaster('db_item_group','number','${r.number}')">ลบ</button></td>
   </tr>`).join(''));
   
-  $('#mt-uom').html(um.map(r=>`<tr><td class="mono">${r.uom_abs_entry}</td><td>${r.uom_code}</td><td><button class="btn btn-danger btn-xs" onclick="delMaster('db_uom','uom_abs_entry','${r.uom_abs_entry}')">ลบ</button></td></tr>`).join(''));
-  $('#mt-uomgroup').html(ug.map(r=>`<tr><td class="mono">${r.uom_group_abs_entry}</td><td>${r.uom_group_code}</td><td><button class="btn btn-danger btn-xs" onclick="delMaster('db_uom_group','uom_group_abs_entry','${r.uom_group_abs_entry}')">ลบ</button></td></tr>`).join(''));
+  $('#mt-uom').html(um.map(r=>`<tr data-m="uom" data-k="${r.uom_abs_entry}" class="mrow"><td class="mono">${r.uom_abs_entry}</td><td>${r.uom_code}</td><td style="white-space:nowrap"><button class="btn btn-outline btn-xs" onclick="editMaster('uom','${r.uom_abs_entry}')" title="แก้ไขชื่อ">✏️ แก้ไข</button> <button class="btn btn-danger btn-xs" onclick="delMaster('db_uom','uom_abs_entry','${r.uom_abs_entry}')">ลบ</button></td></tr>`).join(''));
+  $('#mt-uomgroup').html(ug.map(r=>`<tr data-m="uomgroup" data-k="${r.uom_group_abs_entry}" class="mrow"><td class="mono">${r.uom_group_abs_entry}</td><td>${r.uom_group_code}</td><td style="white-space:nowrap"><button class="btn btn-outline btn-xs" onclick="editMaster('uomgroup','${r.uom_group_abs_entry}')" title="แก้ไขชื่อ">✏️ แก้ไข</button> <button class="btn btn-danger btn-xs" onclick="delMaster('db_uom_group','uom_group_abs_entry','${r.uom_group_abs_entry}')">ลบ</button></td></tr>`).join(''));
   
   if(wh && wh.length){
-    $('#mt-warehouse').html(wh.map(r=>`<tr><td class="mono">${r.whs_code}</td><td>${r.whs_name}</td><td><button class="btn btn-danger btn-xs" onclick="delMaster('db_warehouse','whs_code','${r.whs_code}')">ลบ</button></td></tr>`).join(''));
+    $('#mt-warehouse').html(wh.map(r=>`<tr data-m="warehouse" data-k="${r.whs_code}" class="mrow"><td class="mono">${r.whs_code}</td><td>${r.whs_name}</td><td style="white-space:nowrap"><button class="btn btn-outline btn-xs" onclick="editMaster('warehouse','${r.whs_code}')" title="แก้ไขชื่อ">✏️ แก้ไข</button> <button class="btn btn-danger btn-xs" onclick="delMaster('db_warehouse','whs_code','${r.whs_code}')">ลบ</button></td></tr>`).join(''));
   } else {
     $('#mt-warehouse').html(`<tr><td colspan="3" style="text-align:center;color:var(--r6)">ยังไม่มี Table "db_warehouse" กรุณาสร้างใน Supabase SQL Editor</td></tr>`);
   }
@@ -3174,6 +3175,35 @@ async function showAddMaster(type){
   try{await DB.post(C.table,value);await loadMasterData();if(typeof logAction==='function')logAction('master_add',{table:C.table,value},'master',type);Swal.fire({toast:true,position:'top-end',icon:'success',title:'บันทึกสำเร็จ',showConfirmButton:false,timer:1500});}
   catch(e){Swal.fire('Error',e.message,'error');}
 }
+
+// ===================== MASTER: คลิกแถว/ปุ่ม แก้ไขชื่อ =====================
+const MASTER_EDIT={
+  mstype:{table:'db_mstype',key:'group_code',name:'group_name',title:'แก้ไขชื่อกลุ่ม MSType',list:function(){return MD.msTypes;}},
+  itemgroup:{table:'db_item_group',key:'number',name:'group_name',title:'แก้ไขชื่อกลุ่มบัญชี',list:function(){return MD.itemGroups;}},
+  uom:{table:'db_uom',key:'uom_abs_entry',name:'uom_code',title:'แก้ไขชื่อหน่วยนับ',list:function(){return MD.uoms;}},
+  uomgroup:{table:'db_uom_group',key:'uom_group_abs_entry',name:'uom_group_code',title:'แก้ไขชื่อ UoM Group',list:function(){return MD.uomGroups;}},
+  warehouse:{table:'db_warehouse',key:'whs_code',name:'whs_name',title:'แก้ไขชื่อคลัง',list:function(){return MD.warehouses||[];}}
+};
+async function editMaster(type,k){
+  const C=MASTER_EDIT[type]; if(!C) return;
+  const rec=(C.list()||[]).find(function(r){return String(r[C.key])===String(k);}); if(!rec) return;
+  const old=rec[C.name]||'';
+  const r=await Swal.fire({title:C.title,confirmButtonText:'บันทึก',cancelButtonText:'ยกเลิก',showCancelButton:true,confirmButtonColor:'#256e4e',
+    html:'<div style="text-align:left;font-size:13px"><div style="margin-bottom:8px;color:var(--s5)">รหัส: <b class="mono" style="color:var(--s7)">'+escHtml(String(k))+'</b> (แก้ไม่ได้ เพราะใช้อ้างอิงพัสดุ)</div>'
+      +'<label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">ชื่อ</label><input id="m-edit-name" value="'+escHtml(old)+'" style="width:100%;padding:8px 10px;border:1px solid var(--s2);border-radius:8px;font-size:14px">'
+      +'<div style="margin-top:8px;font-size:11px;color:var(--s4)">* พัสดุที่บันทึกไว้แล้วอาจยังแสดงชื่อเดิม (ชื่อถูกเก็บในรายการตอนออกรหัส)</div></div>',
+    didOpen:function(){ const i=document.getElementById('m-edit-name'); i.focus(); i.select(); i.addEventListener('keydown',function(e){ if(e.key==='Enter') Swal.clickConfirm(); }); },
+    preConfirm:function(){ const v=document.getElementById('m-edit-name').value.trim(); if(!v){ Swal.showValidationMessage('กรุณากรอกชื่อ'); return false; } return v; }});
+  if(!r.isConfirmed||r.value===old) return;
+  try{
+    const body={}; body[C.name]=r.value;
+    await DB.patch(C.table,C.key+'=eq.'+encodeURIComponent(k),body);
+    if(typeof logAction==='function') logAction('master_edit',{table:C.table,code:String(k),changes:[{f:'ชื่อ',from:old,to:r.value}]},'master',String(k));
+    await loadMasterData();
+    Swal.fire({toast:true,position:'top-end',icon:'success',title:'แก้ไขชื่อแล้ว',showConfirmButton:false,timer:1500});
+  }catch(e){ Swal.fire('บันทึกไม่สำเร็จ',e.message||'','error'); }
+}
+$(document).on('click','tr.mrow',function(e){ if($(e.target).closest('button').length) return; editMaster(this.dataset.m,this.dataset.k); });
 
 async function delMaster(table,col,val){
   if(!confirm('ยืนยันลบข้อมูลนี้?'))return;
