@@ -341,14 +341,23 @@ button,.btn,a,label,select,input,[onclick],.dtab-btn,tr[onclick]{touch-action:ma
 .detail-tabs{display:none}
 #hero-thumb img{display:block}
 @media(max-width:480px){#hero-thumb>div{width:76px!important;height:76px!important}}
-.detail-tab-wrap .dtab-panel[data-tab="3"]{display:none}
-.detail-tab-wrap .dtab-panel[data-tab="3"].active{display:block}
+.detail-tab-wrap .dtab-panel[data-tab="3"],.detail-tab-wrap .dtab-panel[data-tab="4"]{display:none}
+.detail-tab-wrap .dtab-panel[data-tab="3"].active,.detail-tab-wrap .dtab-panel[data-tab="4"].active{display:block}
+.ph-tbl{width:100%;border-collapse:collapse;font-size:11.5px}
+.ph-tbl th{background:var(--s0);color:var(--s5);font-weight:600;text-align:left;padding:6px 8px;white-space:nowrap;position:sticky;top:0}
+.ph-tbl td{padding:6px 8px;border-top:1px solid var(--s1);vertical-align:top}
+.ph-sub{color:var(--s5);font-size:10.5px}
 @media(min-width:821px){
   .detail-tabs{display:flex!important;gap:6px;margin-bottom:10px;border-bottom:1px solid var(--s1);padding-bottom:10px}
   .dtab-btn{padding:7px 16px;border:1px solid var(--s2);background:#fff;border-radius:20px;font-size:12.5px;font-weight:600;color:var(--s6);cursor:pointer;font-family:inherit}
   .dtab-btn.active{background:var(--g6);color:#fff;border-color:var(--g6)}
   .dtab-btn[data-tab="2"]{display:none}
   .detail-tab-wrap[data-view="photo"] .dtab-panel:not([data-tab="3"]){display:none}
+  .detail-tab-wrap[data-view="hist"] .dtab-panel:not([data-tab="4"]){display:none}
+  /* ล็อกขนาดป็อบอัพบน PC — สลับแท็บแล้วไม่ยุบ/ขยาย */
+  .detail-tab-wrap{min-height:400px;align-content:start}
+  #view-mode{min-height:600px}
+  .swal2-popup:has(#view-mode){width:880px!important;max-width:96vw!important}
 }
 @media(max-width:820px){
   .detail-tab-wrap div.dtab-panel.active{display:block!important}
@@ -822,6 +831,19 @@ button,.btn,a,label,select,input,[onclick],.dtab-btn,tr[onclick]{touch-action:ma
           <button class="btn btn-outline btn-sm" onclick="downloadTemplate('price')" style="margin-bottom:12px">⬇ Template อัปเดตราคา (.xlsx)</button><br>
           <input type="file" id="file-import-price" accept=".xlsx,.xls" style="margin-bottom:10px">
           <button class="btn btn-success btn-sm" onclick="processExcelImport('price')">อัปโหลดและอัปเดตราคา</button>
+        </div>
+      </div>
+    
+      <div class="card" style="margin-top:16px">
+        <div class="card-header"><h3>🧾 นำเข้าประวัติการซื้อ (PO / GR / AP)</h3></div>
+        <div class="card-body">
+          <p style="font-size:12px;color:var(--s5);margin-bottom:12px">ใช้ไฟล์ Query จาก SAP แสดงที่แท็บ "ประวัติการซื้อ" ในหน้ารายละเอียดพัสดุ จับคู่ด้วยรหัสพัสดุ (Item No.) และเชื่อมเอกสาร PO → GR → AP ด้วยเลขอ้างอิงเอกสารต้นทาง นำเข้าซ้ำได้ ระบบอัปเดตทับไม่ซ้ำซ้อน</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:14px">
+            <div class="fg"><label>ไฟล์ PO (ใบสั่งซื้อ)</label><input type="file" id="ph-po" accept=".xlsx,.xls"></div>
+            <div class="fg"><label>ไฟล์ GR (ใบตรวจรับ)</label><input type="file" id="ph-gr" accept=".xlsx,.xls"></div>
+            <div class="fg"><label>ไฟล์ AP (ใบแจ้งหนี้)</label><input type="file" id="ph-ap" accept=".xlsx,.xls"></div>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="importPurchaseHistory()">⬆ นำเข้าประวัติการซื้อ</button>
         </div>
       </div>
     </div>
@@ -1531,6 +1553,101 @@ function initEditPhotos(it,isAdmin){
 }
 $(function(){ renderFormPhotos(); });
 
+// ===================== PURCHASE HISTORY (PO / GR / AP) =====================
+function phDate(v){
+  if(v===null||v===undefined||v==='') return null;
+  if(v instanceof Date && !isNaN(v)) return v.toISOString().slice(0,10);
+  if(typeof v==='number'){ const d=new Date(Math.round((v-25569)*86400000)); return isNaN(d)?null:d.toISOString().slice(0,10); }
+  const s=String(v).trim(); let m=s.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{2,4})$/);
+  if(m){ let y=+m[3]; if(y<100) y+=2000; else if(y>2400) y-=543; return y+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0'); }
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); return m?m[0]:null;
+}
+function phNum(v){ const n=parseFloat(String(v==null?'':v).replace(/,/g,'')); return isNaN(n)?null:n; }
+function phMap(type,r){
+  const code=String(r['Item No.']==null?'':r['Item No.']).trim();
+  const doc=String(r['Document Number']==null?'':r['Document Number']).trim();
+  if(!code||!doc) return null;
+  const line=parseInt(r['No.'],10); 
+  return {doc_type:type,doc_no:doc,line_no:isNaN(line)?0:line,item_code:code,
+    item_desc:String(r['Item/Service Description']||'').slice(0,300),
+    doc_status:String(r['Document Status']||''),
+    posting_date:phDate(r['Posting Date']),doc_date:phDate(r['Document Date']),delivery_date:phDate(r['Delivery Date']),
+    vendor_code:String(r['Customer/Vendor Code']||''),vendor_name:String(r['Customer/Vendor Name']||''),
+    qty:phNum(r['Quantity']),unit:String(r['Unit']||''),unit_price:phNum(r['Unit Price']),row_total:phNum(r['Row Total']),
+    dept:String(r['Department']||''),
+    person_name:(String(r['First Name']||'')+' '+String(r['Last Name']||'')).trim(),
+    base_type:String(r['Base Document Type']||''),base_ref:String(r['Base Document Reference']||''),
+    fiscal_year:String(r['Fiscal Year']||'')};
+}
+async function importPurchaseHistory(){
+  const jobs=[['PO','ph-po'],['GR','ph-gr'],['AP','ph-ap']].map(function(x){ return {type:x[0],file:document.getElementById(x[1]).files[0]}; }).filter(function(x){return x.file;});
+  if(!jobs.length) return Swal.fire('แจ้งเตือน','กรุณาเลือกไฟล์อย่างน้อย 1 ไฟล์ (PO / GR / AP)','warning');
+  const r=await Swal.fire({icon:'question',title:'นำเข้าประวัติการซื้อ',text:'จะนำเข้า '+jobs.map(function(j){return j.type}).join(' + ')+' (รายการซ้ำจะถูกอัปเดตทับ ไม่ซ้ำซ้อน)',showCancelButton:true,confirmButtonText:'นำเข้า',cancelButtonText:'ยกเลิก',confirmButtonColor:'#256e4e'});
+  if(!r.isConfirmed) return;
+  const summary=[];
+  try{
+    for(const j of jobs){
+      Swal.fire({title:'กำลังอ่านไฟล์ '+j.type+'...',html:'<div style="font-size:12px;color:var(--s5)">ไฟล์ใหญ่อาจใช้เวลาสักครู่ อย่าปิดหน้านี้</div>',allowOutsideClick:false,didOpen:function(){Swal.showLoading();}});
+      await new Promise(function(r){setTimeout(r,60);});
+      const wb=XLSX.read(new Uint8Array(await j.file.arrayBuffer()),{type:'array'});
+      const json=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+      const map=new Map(); let skipped=0;
+      json.forEach(function(row){ const m=phMap(j.type,row); if(!m){skipped++;return;} map.set(m.doc_type+'|'+m.doc_no+'|'+m.line_no,m); });
+      const rows=Array.from(map.values());
+      if(!rows.length){ summary.push(j.type+': ไม่พบข้อมูล (ตรวจสอบหัวคอลัมน์)'); continue; }
+      for(let i=0;i<rows.length;i+=500){
+        Swal.update({title:'นำเข้า '+j.type+' ... '+Math.min(i+500,rows.length).toLocaleString()+' / '+rows.length.toLocaleString()});
+        const res=await fetch(SUPABASE_URL+'/rest/v1/item_purchase_history?on_conflict=doc_type,doc_no,line_no',{method:'POST',
+          headers:Object.assign({},_headers(),{'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(rows.slice(i,i+500))});
+        if(!res.ok) throw new Error(j.type+': '+(await res.text()));
+      }
+      summary.push(j.type+': '+rows.length.toLocaleString()+' แถว'+(skipped?' (ข้าม '+skipped+')':''));
+      if(typeof logAction==='function') logAction('import_history',{type:j.type,count:rows.length},'item',j.type);
+    }
+    ['ph-po','ph-gr','ph-ap'].forEach(function(id){document.getElementById(id).value='';});
+    Swal.fire({icon:'success',title:'นำเข้าสำเร็จ',html:'<div style="text-align:left;font-size:13px;line-height:1.9">'+summary.join('<br>')+'</div>',confirmButtonColor:'#256e4e'});
+  }catch(e){ Swal.fire({icon:'error',title:'นำเข้าไม่สำเร็จ',html:'<div style="text-align:left;font-size:12px;word-break:break-word;font-family:ui-monospace,monospace;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:9px 12px;color:#991b1b">'+escHtml(String(e.message||e).slice(0,500))+'</div><div style="font-size:12px;color:var(--s5);margin-top:8px">ตรวจว่ารัน SQL_PURCHASE_HISTORY.sql แล้ว</div>',confirmButtonColor:'#256e4e'}); }
+}
+function phFmtDate(d){ if(!d) return '–'; const p=String(d).split('-'); return p.length===3?p[2]+'/'+p[1]+'/'+(+p[0]+543).toString().slice(2):d; }
+function phMoney(n){ return n==null?'–':Number(n).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+async function loadItemHistory(){
+  const box=document.getElementById('hist-box'); if(!box||box.dataset.loaded) return;
+  const code=box.dataset.code;
+  box.innerHTML='<div style="padding:30px;text-align:center;color:var(--s5);font-size:13px">กำลังโหลดประวัติ...</div>';
+  try{
+    const rows=await DB.get('item_purchase_history','item_code=eq.'+encodeURIComponent(code)+'&select=*&order=posting_date.desc&limit=600');
+    box.dataset.loaded='1';
+    if(!rows.length){ box.innerHTML='<div style="padding:34px 10px;text-align:center;color:var(--s4);font-size:13px">ไม่พบประวัติการซื้อของรหัสนี้<div style="font-size:11px;margin-top:4px">นำเข้าไฟล์ PO / GR / AP ได้ที่เมนูนำเข้าข้อมูล</div></div>'; return; }
+    const po=rows.filter(function(r){return r.doc_type==='PO';}), gr=rows.filter(function(r){return r.doc_type==='GR';}), ap=rows.filter(function(r){return r.doc_type==='AP';});
+    const usedGR=new Set(), usedAP=new Set(), out=[];
+    function apFor(g){ return ap.filter(function(a){ return a.base_ref===g.doc_no; }); }
+    po.forEach(function(p){
+      const gs=gr.filter(function(g){return g.base_ref===p.doc_no;}); gs.forEach(function(g){usedGR.add(g.id);});
+      const as=[]; gs.forEach(function(g){ apFor(g).forEach(function(a){ usedAP.add(a.id); as.push(a); }); });
+      out.push({date:p.posting_date,po:p,gr:gs,ap:as});
+    });
+    gr.filter(function(g){return !usedGR.has(g.id);}).forEach(function(g){
+      const as=apFor(g); as.forEach(function(a){usedAP.add(a.id);}); out.push({date:g.posting_date,po:null,gr:[g],ap:as}); });
+    ap.filter(function(a){return !usedAP.has(a.id);}).forEach(function(a){ out.push({date:a.posting_date,po:null,gr:[],ap:[a]}); });
+    out.sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});
+    const first=function(x){return x[0];};
+    const vend=function(e){ const s=e.po||first(e.gr)||first(e.ap); return s?(s.vendor_name||s.vendor_code||'–'):'–'; };
+    const body=out.map(function(e){
+      const p=e.po, g=first(e.gr), a=first(e.ap), main=p||g||a;
+      const qty=main.qty!=null?Number(main.qty).toLocaleString('th-TH')+' '+(main.unit||''):'–';
+      return '<tr>'
+        +'<td style="white-space:nowrap"><b>'+phFmtDate(e.date)+'</b><div class="ph-sub">'+(p?'PO '+p.doc_no:g?'GR '+g.doc_no:'AP '+a.doc_no)+'</div></td>'
+        +'<td style="min-width:150px">'+escHtml(vend(e))+'</td>'
+        +'<td>'+(p?escHtml(p.dept||'–')+(p.person_name?'<div class="ph-sub">'+escHtml(p.person_name)+'</div>':''):'<span class="ph-sub">–</span>')+'</td>'
+        +'<td style="white-space:nowrap;text-align:right">'+qty+'<div class="ph-sub">@ '+phMoney(main.unit_price)+'</div></td>'
+        +'<td style="white-space:nowrap">'+(g?phFmtDate(g.posting_date)+(g.person_name?'<div class="ph-sub">'+escHtml(g.person_name)+'</div>':'')+'<div class="ph-sub">GR '+g.doc_no+'</div>':'<span class="ph-sub">–</span>')+'</td>'
+        +'<td style="white-space:nowrap">'+(a?phFmtDate(a.posting_date)+(a.delivery_date?'<div class="ph-sub">ครบกำหนด '+phFmtDate(a.delivery_date)+'</div>':'')+'<div class="ph-sub">AP '+a.doc_no+'</div>':'<span class="ph-sub">–</span>')+'</td></tr>';
+    }).join('');
+    box.innerHTML='<div style="font-size:11.5px;color:var(--s5);margin-bottom:6px">พบ '+out.length+' รายการ (PO '+po.length+' · GR '+gr.length+' · AP '+ap.length+')</div>'
+      +'<div style="max-height:340px;overflow:auto;border:1px solid var(--s1);border-radius:8px"><table class="ph-tbl"><thead><tr><th>วันที่ / เอกสาร</th><th>ผู้ขาย</th><th>หน่วยงานขอซื้อ</th><th style="text-align:right">จำนวน / ราคา</th><th>ตรวจรับ (GR)</th><th>ตั้งหนี้ (AP)</th></tr></thead><tbody>'+body+'</tbody></table></div>';
+  }catch(e){ box.innerHTML='<div style="padding:20px;color:#991b1b;font-size:12px;word-break:break-word">โหลดประวัติไม่สำเร็จ: '+escHtml(e.message||'')+'<div style="color:var(--s5);margin-top:4px">ตรวจว่ารัน SQL_PURCHASE_HISTORY.sql แล้ว</div></div>'; }
+}
+
 // ===================== GLOBAL ERROR POPUP =====================
 // แสดงสาเหตุ error ทุกกรณีที่หลุดจาก try/catch (กันเงียบ) — กันเด้งซ้ำภายใน 4 วินาที
 let _lastErrAt = 0, _lastErrMsg = '';
@@ -1660,7 +1777,7 @@ $(function(){ restoreSession(); });
 
 // ===================== ACTIVITY LOG VIEWER =====================
 PS.logs = { data: [] };
-const LOG_LABELS = {login:'เข้าสู่ระบบ',logout:'ออกจากระบบ',create_job:'ออกรหัส/บันทึกใบงาน',edit_item:'แก้ไขไอเทม',approve_item:'อนุมัติไอเทม',delete_item:'ลบไอเทม',delete_job:'ลบใบงาน',master_add:'เพิ่มข้อมูลหลัก',master_delete:'ลบข้อมูลหลัก',export:'Export ข้อมูล',pr_issue:'ส่งรหัสกลับ PR ORDER',br_issue:'ส่งรหัสกลับ BRPR',import:'นำเข้าข้อมูล',register:'สมัครผู้ใช้ใหม่',change_role:'เปลี่ยนสิทธิ์ผู้ใช้',delete_user:'ลบผู้ใช้',edit_profile:'แก้ไขโปรไฟล์',update_prices:'อัปเดตราคา (นำเข้า)',delete_all:'ลบข้อมูลทั้งหมด',rev_save:'หมวดรายได้ (เพิ่ม/แก้ไข)',rev_delete:'ลบหมวดรายได้',cgd_import:'นำเข้ารหัสกรมบัญชีกลาง',cgd_delete:'ลบรหัสกรมบัญชีกลาง',client_error:'ข้อผิดพลาดในระบบ'};
+const LOG_LABELS = {login:'เข้าสู่ระบบ',logout:'ออกจากระบบ',create_job:'ออกรหัส/บันทึกใบงาน',edit_item:'แก้ไขไอเทม',approve_item:'อนุมัติไอเทม',delete_item:'ลบไอเทม',delete_job:'ลบใบงาน',master_add:'เพิ่มข้อมูลหลัก',master_delete:'ลบข้อมูลหลัก',export:'Export ข้อมูล',pr_issue:'ส่งรหัสกลับ PR ORDER',br_issue:'ส่งรหัสกลับ BRPR',import:'นำเข้าข้อมูล',import_history:'นำเข้าประวัติการซื้อ',register:'สมัครผู้ใช้ใหม่',change_role:'เปลี่ยนสิทธิ์ผู้ใช้',delete_user:'ลบผู้ใช้',edit_profile:'แก้ไขโปรไฟล์',update_prices:'อัปเดตราคา (นำเข้า)',delete_all:'ลบข้อมูลทั้งหมด',rev_save:'หมวดรายได้ (เพิ่ม/แก้ไข)',rev_delete:'ลบหมวดรายได้',cgd_import:'นำเข้ารหัสกรมบัญชีกลาง',cgd_delete:'ลบรหัสกรมบัญชีกลาง',client_error:'ข้อผิดพลาดในระบบ'};
 const FLD_LABELS = {item_name:'ชื่อสินค้า',item_name_en:'ชื่อสินค้า (EN)',trade_name:'ชื่อการค้า',alias_name:'Alias',old_code:'รหัสเดิม',ref_no:'Ref.No',barcode:'Barcode',u_ntt_remark:'หมายเหตุ',cgd_code:'รหัสกรมบัญชีกลาง',u_ntt_revenue_cat:'หมวดรายได้',u_ntt_ms_type:'MSType',u_ntt_asset_pur:'MSType (ครุภัณฑ์)',items_group_code:'กลุ่มบัญชี',items_group_text:'ชื่อกลุ่มบัญชี',default_warehouse:'คลัง Default',inventory_uom:'หน่วยคลัง',inventory_uom_entry:'หน่วยคลัง (Entry)',sys_uom_name:'หน่วยนับ',purchase_vat_group:'VAT Group',u_ntt_interface:'Interface',purchase_item:'PurchaseItem',sales_item:'SalesItem',inventory_item:'InventoryItem',sys_cost:'ราคาทุน',sys_price:'ราคาขาย',status:'สถานะอนุมัติ',sync_sap:'Sync SAP',sync_his:'Sync HIS',is_inactive:'Inactive',issue_method:'Issue Method',photo1_url:'รูปภาพ 1',photo2_url:'รูปภาพ 2'};
 function fmtVal(v){ if(v===null||v===undefined||v==='') return '–'; if(v===true) return 'ใช่'; if(v===false) return 'ไม่'; return String(v); }
 // เทียบค่าเดิม/ใหม่ → [{f,from,to}] เฉพาะที่เปลี่ยนจริง
@@ -2506,6 +2623,7 @@ function openItemDetail(idx){
       <button type="button" class="dtab-btn active" data-tab="1">ข้อมูลทั่วไป</button>
       <button type="button" class="dtab-btn" data-tab="2">ราคา & คลัง</button>
       <button type="button" class="dtab-btn" data-tab="3">📷 รูปภาพ</button>
+      <button type="button" class="dtab-btn" data-tab="4">🧾 ประวัติการซื้อ</button>
     </div>
     <div class="detail-tab-wrap" data-view="info" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <table class="dtab-panel active" data-tab="1" style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:14px">
@@ -2537,6 +2655,7 @@ function openItemDetail(idx){
         <tr><td style="padding:5px 8px;color:var(--s5)">วันที่/เวลาที่ออกรหัส</td><td style="padding:5px 8px;font-size:12px">${it.created_at?new Date(it.created_at).toLocaleString('th-TH',{dateStyle:'long',timeStyle:'short'})+' น.':'–'}</td></tr>
       </table>
       <div class="dtab-panel" data-tab="3" style="grid-column:1/-1;padding:4px 2px 14px"><div id="e-photos"></div></div>
+      <div class="dtab-panel" data-tab="4" style="grid-column:1/-1;padding:2px 0 10px"><div id="hist-box" data-code="${it.item_code}"></div></div>
     </div>
 
     <div style="display:flex;gap:7px;margin-top:14px;padding-top:14px;border-top:1px solid var(--s1);flex-wrap:wrap;justify-content:flex-end">
@@ -2608,7 +2727,8 @@ function bindDetailTabs(){
     const t=$(this).data('tab');
     $('.dtab-btn').removeClass('active'); $(this).addClass('active');
     $('.dtab-panel').removeClass('active').filter(function(){return String($(this).data('tab'))===String(t);}).addClass('active');
-    $('.detail-tab-wrap').attr('data-view', String(t)==='3'?'photo':'info');
+    $('.detail-tab-wrap').attr('data-view', String(t)==='3'?'photo':String(t)==='4'?'hist':'info');
+    if(String(t)==='4') loadItemHistory();
     $('.swal2-html-container').scrollTop(0);
   });
 }
