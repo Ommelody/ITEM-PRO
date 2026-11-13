@@ -1573,7 +1573,7 @@ function phMap(type,r){
     doc_status:String(r['Document Status']||''),
     posting_date:phDate(r['Posting Date']),doc_date:phDate(r['Document Date']),delivery_date:phDate(r['Delivery Date']),
     vendor_code:String(r['Customer/Vendor Code']||''),vendor_name:String(r['Customer/Vendor Name']||''),
-    qty:phNum(r['Quantity']),unit:String(r['Unit']||''),unit_price:phNum(r['Unit Price']),row_total:phNum(r['Row Total']),
+    qty:phNum(r['Quantity']),unit:String(r['Unit']||''),unit_price:phNum(r['Gross Price']!==undefined&&r['Gross Price']!==''?r['Gross Price']:r['Unit Price']),row_total:phNum(r['Row Total']),
     dept:String(r['Department']||''),
     person_name:(String(r['First Name']||'')+' '+String(r['Last Name']||'')).trim(),
     base_type:String(r['Base Document Type']||''),base_ref:String(r['Base Document Reference']||''),
