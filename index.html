@@ -347,6 +347,7 @@ button,.btn,a,label,select,input,[onclick],.dtab-btn,tr[onclick]{touch-action:ma
 .ph-tbl th{background:var(--s0);color:var(--s5);font-weight:600;text-align:left;padding:6px 8px;white-space:nowrap;position:sticky;top:0}
 .ph-tbl td{padding:6px 8px;border-top:1px solid var(--s1);vertical-align:top}
 .ph-sub{color:var(--s5);font-size:10.5px}
+tr.cgdrow{cursor:pointer}tr.cgdrow:hover td{background:#f0fdf4}
 tr.mrow{cursor:pointer}tr.mrow:hover td{background:#f0fdf4}
 @media(min-width:821px){
   .detail-tabs{display:flex!important;gap:6px;margin-bottom:10px;border-bottom:1px solid var(--s1);padding-bottom:10px}
@@ -982,8 +983,8 @@ tr.mrow{cursor:pointer}tr.mrow:hover td{background:#f0fdf4}
           </div>
           <div style="border:1px solid var(--s2);border-radius:var(--radl);overflow:hidden">
             <table class="dt" id="cgd-table">
-              <thead><tr><th>#</th><th>รหัส กบก (B)</th><th>รายการ (C)</th><th>ค่า CGD Code (B:C)</th><th>ลบ</th></tr></thead>
-              <tbody id="cgd-tbody"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--s4)">กำลังโหลด...</td></tr></tbody>
+              <thead><tr><th>#</th><th>รหัส กบก (B)</th><th>รายการ (C)</th><th>หน่วย</th><th style="text-align:right">ราคาไม่เกิน (บาท)</th><th>ค่า CGD Code (B:C)</th><th>ลบ</th></tr></thead>
+              <tbody id="cgd-tbody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--s4)">กำลังโหลด...</td></tr></tbody>
             </table>
           </div>
           <div class="pager" id="cgd-pager"></div>
@@ -1836,7 +1837,7 @@ $(function(){ restoreSession(); });
 // ===================== ACTIVITY LOG VIEWER =====================
 PS.logs = { data: [] };
 const LOG_LABELS = {login:'เข้าสู่ระบบ',logout:'ออกจากระบบ',create_job:'ออกรหัส/บันทึกใบงาน',edit_item:'แก้ไขไอเทม',approve_item:'อนุมัติไอเทม',delete_item:'ลบไอเทม',delete_job:'ลบใบงาน',master_add:'เพิ่มข้อมูลหลัก',master_delete:'ลบข้อมูลหลัก',export:'Export ข้อมูล',pr_issue:'ส่งรหัสกลับ PR ORDER',br_issue:'ส่งรหัสกลับ BRPR',import:'นำเข้าข้อมูล',import_history:'นำเข้าประวัติการซื้อ',master_edit:'ข้อมูลหลัก (แก้ไขชื่อ)',register:'สมัครผู้ใช้ใหม่',change_role:'เปลี่ยนสิทธิ์ผู้ใช้',delete_user:'ลบผู้ใช้',edit_profile:'แก้ไขโปรไฟล์',update_prices:'อัปเดตราคา (นำเข้า)',delete_all:'ลบข้อมูลทั้งหมด',rev_save:'หมวดรายได้ (เพิ่ม/แก้ไข)',rev_delete:'ลบหมวดรายได้',cgd_import:'นำเข้ารหัสกรมบัญชีกลาง',cgd_delete:'ลบรหัสกรมบัญชีกลาง',client_error:'ข้อผิดพลาดในระบบ'};
-const FLD_LABELS = {item_name:'ชื่อสินค้า',item_name_en:'ชื่อสินค้า (EN)',trade_name:'ชื่อการค้า',alias_name:'Alias',old_code:'รหัสเดิม',ref_no:'Ref.No',barcode:'Barcode',u_ntt_remark:'หมายเหตุ',cgd_code:'รหัสกรมบัญชีกลาง',u_ntt_revenue_cat:'หมวดรายได้',u_ntt_ms_type:'MSType',u_ntt_asset_pur:'MSType (ครุภัณฑ์)',items_group_code:'กลุ่มบัญชี',items_group_text:'ชื่อกลุ่มบัญชี',default_warehouse:'คลัง Default',inventory_uom:'หน่วยคลัง',inventory_uom_entry:'หน่วยคลัง (Entry)',sys_uom_name:'หน่วยนับ',purchase_vat_group:'VAT Group',u_ntt_interface:'Interface',purchase_item:'PurchaseItem',sales_item:'SalesItem',inventory_item:'InventoryItem',sys_cost:'ราคาทุน',sys_price:'ราคาขาย',status:'สถานะอนุมัติ',sync_sap:'Sync SAP',sync_his:'Sync HIS',is_inactive:'Inactive',issue_method:'Issue Method',photo1_url:'รูปภาพ 1',photo2_url:'รูปภาพ 2'};
+const FLD_LABELS = {cgd_name:'รายการ',cgd_unit:'หน่วย',cgd_max_price:'ราคาไม่เกิน',cgd_feature:'ลักษณะ',cgd_indication:'ข้อบ่งชี้',cgd_note:'หมายเหตุแพทย์',cgd_ref:'ตามหนังสือ',item_name:'ชื่อสินค้า',item_name_en:'ชื่อสินค้า (EN)',trade_name:'ชื่อการค้า',alias_name:'Alias',old_code:'รหัสเดิม',ref_no:'Ref.No',barcode:'Barcode',u_ntt_remark:'หมายเหตุ',cgd_code:'รหัสกรมบัญชีกลาง',u_ntt_revenue_cat:'หมวดรายได้',u_ntt_ms_type:'MSType',u_ntt_asset_pur:'MSType (ครุภัณฑ์)',items_group_code:'กลุ่มบัญชี',items_group_text:'ชื่อกลุ่มบัญชี',default_warehouse:'คลัง Default',inventory_uom:'หน่วยคลัง',inventory_uom_entry:'หน่วยคลัง (Entry)',sys_uom_name:'หน่วยนับ',purchase_vat_group:'VAT Group',u_ntt_interface:'Interface',purchase_item:'PurchaseItem',sales_item:'SalesItem',inventory_item:'InventoryItem',sys_cost:'ราคาทุน',sys_price:'ราคาขาย',status:'สถานะอนุมัติ',sync_sap:'Sync SAP',sync_his:'Sync HIS',is_inactive:'Inactive',issue_method:'Issue Method',photo1_url:'รูปภาพ 1',photo2_url:'รูปภาพ 2'};
 function fmtVal(v){ if(v===null||v===undefined||v==='') return '–'; if(v===true) return 'ใช่'; if(v===false) return 'ไม่'; return String(v); }
 // เทียบค่าเดิม/ใหม่ → [{f,from,to}] เฉพาะที่เปลี่ยนจริง
 function diffFields(oldO, newO){
@@ -3824,11 +3825,13 @@ function filterCGDTable(){
 function renderCGDTable(p){
   CGD_PS.cur = p;
   const{filtered,lim}=CGD_PS,start=(p-1)*lim,sl=filtered.slice(start,start+lim);
-  if(!sl.length){$('#cgd-tbody').html('<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--s4)">ไม่พบข้อมูล</td></tr>');$('#cgd-pager').empty();return;}
-  $('#cgd-tbody').html(sl.map((r,i)=>`<tr>
+  if(!sl.length){$('#cgd-tbody').html('<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--s4)">ไม่พบข้อมูล</td></tr>');$('#cgd-pager').empty();return;}
+  $('#cgd-tbody').html(sl.map((r,i)=>`<tr class="cgdrow" data-id="${r.id}" title="คลิกเพื่อดูรายละเอียด">
     <td style="color:var(--s4);font-size:11px">${start+i+1}</td>
     <td class="mono" style="color:var(--g7);font-weight:600">${r.cgd_code||'–'}</td>
     <td style="font-size:12px">${r.cgd_name||'–'}</td>
+    <td style="font-size:12px;white-space:nowrap">${r.cgd_unit||'–'}</td>
+    <td class="mono" style="font-size:12px;text-align:right;white-space:nowrap">${r.cgd_max_price!=null&&r.cgd_max_price!==''?Number(r.cgd_max_price).toLocaleString('th-TH'):'–'}</td>
     <td class="mono" style="font-size:11px;color:var(--s5)">${r.cgd_full||'–'}</td>
     <td><button class="btn btn-danger btn-xs" onclick="deleteCGDRow('${r.id}')">✕</button></td>
   </tr>`).join(''));
@@ -3858,6 +3861,9 @@ async function importCGDExcel(){
       const wb = XLSX.read(new Uint8Array(e.target.result),{type:'array'});
       const ws = wb.Sheets[wb.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      // [layout ใหม่] ไฟล์อัตราอุปกรณ์อวัยวะเทียม: 1 รายการ = แถวหลัก + ลักษณะ/ข้อบ่งชี้/หมายเหตุ/ตามหนังสือ
+      const isDetail = json.some(function(r){ return /^ลักษณะ\s*:/.test(String(r[2]||'').trim()); });
+      if(isDetail){ await importCGDDetail(json); return; }
       const inserts = [];
       for(let i=6; i<json.length; i++){
         const row = json[i];
@@ -3882,6 +3888,81 @@ async function importCGDExcel(){
   };
   reader.readAsArrayBuffer(file);
 }
+
+// ===================== CGD: อัตราอุปกรณ์อวัยวะเทียม (รายละเอียด) =====================
+async function importCGDDetail(json){
+  const items=[]; let cur=null;
+  const strip=function(s,p){ return String(s||'').trim().replace(new RegExp('^'+p+'\\s*:\\s*'),'').trim(); };
+  json.forEach(function(row){
+    const b=String(row[1]==null?'':row[1]).trim(), c=String(row[2]==null?'':row[2]).trim();
+    if(b && !isNaN(parseInt(b)) && /^รายการ\s*:/.test(c)){
+      const price=parseFloat(String(row[4]==null?'':row[4]).replace(/,/g,''));
+      cur={cgd_code:b,cgd_name:strip(c,'รายการ'),cgd_unit:String(row[3]||'').trim(),cgd_max_price:isNaN(price)?null:price};
+      items.push(cur);
+    } else if(cur && c){
+      if(/^ลักษณะ\s*:/.test(c)) cur.cgd_feature=strip(c,'ลักษณะ');
+      else if(/^ข้อบ่งชี้\s*:/.test(c)) cur.cgd_indication=strip(c,'ข้อบ่งชี้');
+      else if(/^คุณสมบัติแพทย์/.test(c)) cur.cgd_note=c.replace(/^[^:]*:\s*/,'').trim();
+      else if(/^ตามหนังสือ\s*:/.test(c)) cur.cgd_ref=strip(c,'ตามหนังสือ');
+    }
+  });
+  const seen=new Set(), list=items.filter(function(x){ if(seen.has(x.cgd_code)) return false; seen.add(x.cgd_code); return true; });
+  if(!list.length) return Swal.fire('แจ้งเตือน','ไม่พบรายการในไฟล์','warning');
+  const existing=await dbFetchAll('db_cgd_codes','select=id,cgd_code&order=id.asc');
+  const byCode=new Map(); existing.forEach(function(r){ if(!byCode.has(String(r.cgd_code))) byCode.set(String(r.cgd_code),r); });
+  const upd=list.filter(function(x){return byCode.has(x.cgd_code);}), add=list.filter(function(x){return !byCode.has(x.cgd_code);});
+  const ok=await Swal.fire({icon:'question',title:'นำเข้าอัตราอุปกรณ์อวัยวะเทียม',confirmButtonText:'นำเข้า',cancelButtonText:'ยกเลิก',showCancelButton:true,confirmButtonColor:'#256e4e',
+    html:'<div style="text-align:left;font-size:13px;line-height:1.9">พบ <b>'+list.length+'</b> รายการในไฟล์<br>• มีรหัสในระบบแล้ว <b>'+upd.length+'</b> รายการ → อัปเดตรายละเอียด/ราคา (ชื่อและรหัสเดิมไม่เปลี่ยน)<br>• รหัสใหม่ <b>'+add.length+'</b> รายการ → เพิ่มใหม่</div>'});
+  if(!ok.isConfirmed) return;
+  Swal.fire({title:'กำลังนำเข้า...',allowOutsideClick:false,didOpen:function(){Swal.showLoading();}});
+  let fail=0;
+  const fields=function(x){ return {cgd_unit:x.cgd_unit,cgd_max_price:x.cgd_max_price,cgd_feature:x.cgd_feature||null,cgd_indication:x.cgd_indication||null,cgd_note:x.cgd_note||null,cgd_ref:x.cgd_ref||null}; };
+  for(let i=0;i<upd.length;i+=10){
+    await Promise.all(upd.slice(i,i+10).map(async function(x){ try{ await DB.patch('db_cgd_codes','id=eq.'+byCode.get(x.cgd_code).id,fields(x)); }catch(e){ fail++; } }));
+    Swal.update({title:'อัปเดต '+Math.min(i+10,upd.length)+' / '+upd.length});
+  }
+  for(let i=0;i<add.length;i+=100){
+    await DB.post('db_cgd_codes',add.slice(i,i+100).map(function(x){ return Object.assign({cgd_code:x.cgd_code,cgd_name:x.cgd_name,cgd_full:x.cgd_code+':'+x.cgd_name},fields(x)); }));
+  }
+  if(typeof logAction==='function') logAction('cgd_import',{count:list.length,updated:upd.length,added:add.length,failed:fail,note:'อัตราอุปกรณ์อวัยวะเทียม'},'master','cgd');
+  document.getElementById('cgd-file').value='';
+  await loadCGDPage();
+  Swal.fire({icon:fail?'warning':'success',title:'นำเข้าสำเร็จ',html:'อัปเดต '+(upd.length-fail)+' · เพิ่มใหม่ '+add.length+(fail?' · ไม่สำเร็จ '+fail:''),confirmButtonColor:'#256e4e'});
+}
+function cgdField(label,val){ return '<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--s5);font-weight:600;margin-bottom:2px">'+label+'</div><div style="font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word">'+(val?escHtml(String(val)):'<span style="color:var(--s4)">–</span>')+'</div></div>'; }
+function showCGDDetail(id){
+  const r=CGD_DATA.find(function(x){return String(x.id)===String(id);}); if(!r) return;
+  const isAdm=(typeof CU!=='undefined'&&CU&&CU.role==='admin');
+  const price=r.cgd_max_price!=null&&r.cgd_max_price!==''?Number(r.cgd_max_price).toLocaleString('th-TH')+' บาท '+(r.cgd_unit||''):'–';
+  Swal.fire({title:'',width:'720px',showConfirmButton:false,showCloseButton:true,
+    html:'<div style="text-align:left"><div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:12px 16px;margin-bottom:14px"><div class="mono" style="font-size:20px;font-weight:700;color:var(--g7)">'+escHtml(r.cgd_code||'')+'</div><div style="font-size:14px;font-weight:600;margin-top:3px">'+escHtml(r.cgd_name||'')+'</div><div style="margin-top:6px;font-size:13px">ราคาไม่เกิน <b style="color:var(--r6)">'+escHtml(price)+'</b></div></div>'
+      +cgdField('ลักษณะ',r.cgd_feature)+cgdField('ข้อบ่งชี้',r.cgd_indication)+cgdField('คุณสมบัติแพทย์ผู้สั่งใช้ / หมายเหตุ',r.cgd_note)+cgdField('ตามหนังสือ',r.cgd_ref)
+      +(isAdm?'<div style="text-align:right;margin-top:8px"><button type="button" class="btn btn-warning btn-sm" style="background:var(--a0);color:var(--a6);border:1px solid var(--a1)" onclick="editCGD(\''+r.id+'\')">✏️ แก้ไขข้อมูล</button></div>':'')+'</div>'});
+}
+function editCGD(id){
+  const r=CGD_DATA.find(function(x){return String(x.id)===String(id);}); if(!r) return;
+  const inp=function(i,l,v,t){ return '<div style="margin-bottom:9px"><label style="font-size:11.5px;font-weight:600;color:var(--s6);display:block;margin-bottom:3px">'+l+'</label><input id="'+i+'" type="'+(t||'text')+'" value="'+escHtml(v==null?'':String(v))+'" style="width:100%;padding:7px 10px;border:1px solid var(--s2);border-radius:8px;font-size:13px"></div>'; };
+  const ta=function(i,l,v){ return '<div style="margin-bottom:9px"><label style="font-size:11.5px;font-weight:600;color:var(--s6);display:block;margin-bottom:3px">'+l+'</label><textarea id="'+i+'" rows="3" style="width:100%;padding:7px 10px;border:1px solid var(--s2);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical">'+escHtml(v||'')+'</textarea></div>'; };
+  Swal.fire({title:'แก้ไข '+escHtml(r.cgd_code||''),width:'720px',showCancelButton:true,confirmButtonText:'บันทึก',cancelButtonText:'ยกเลิก',confirmButtonColor:'#256e4e',
+    html:'<div style="text-align:left">'+inp('cg-name','รายการ',r.cgd_name)+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+inp('cg-unit','หน่วย',r.cgd_unit)+inp('cg-price','ราคาไม่เกิน (บาท)',r.cgd_max_price,'number')+'</div>'+ta('cg-feature','ลักษณะ',r.cgd_feature)+ta('cg-ind','ข้อบ่งชี้',r.cgd_indication)+ta('cg-note','คุณสมบัติแพทย์ผู้สั่งใช้ / หมายเหตุ',r.cgd_note)+ta('cg-ref','ตามหนังสือ',r.cgd_ref)+'<div style="font-size:11px;color:var(--s4)">* รหัสแก้ไม่ได้ ถ้าเปลี่ยนชื่อรายการ ระบบจะปรับค่า CGD Code (B:C) และพัสดุที่ใช้ค่าเดิมให้ตรงกัน</div></div>',
+    preConfirm:function(){ const g=function(i){return document.getElementById(i).value.trim();}; const n=g('cg-name'); if(!n){ Swal.showValidationMessage('กรุณากรอกชื่อรายการ'); return false; }
+      const pr=parseFloat(g('cg-price')); return {cgd_name:n,cgd_unit:g('cg-unit')||null,cgd_max_price:isNaN(pr)?null:pr,cgd_feature:g('cg-feature')||null,cgd_indication:g('cg-ind')||null,cgd_note:g('cg-note')||null,cgd_ref:g('cg-ref')||null}; }
+  }).then(async function(res){
+    if(!res.isConfirmed){ showCGDDetail(id); return; }
+    const v=res.value; const changes=diffFields(r,v).map(function(c){ return {f:CGD_LBL[c.f]||c.f,from:c.from,to:c.to}; });
+    try{
+      const oldFull=r.cgd_full, nameChanged=v.cgd_name!==r.cgd_name;
+      if(nameChanged) v.cgd_full=r.cgd_code+':'+v.cgd_name;
+      await DB.patch('db_cgd_codes','id=eq.'+id,v);
+      if(nameChanged && oldFull){ try{ await DB.patch('items','u_ntt_cgd_code=eq.'+encodeURIComponent(oldFull),{u_ntt_cgd_code:v.cgd_full}); }catch(e){} }
+      if(typeof logAction==='function') logAction('master_edit',{table:'db_cgd_codes',code:r.cgd_code,changes:changes},'master',r.cgd_code);
+      Object.assign(r,v); renderCGDTable(CGD_PS.cur); populateCGDDropdown();
+      Swal.fire({toast:true,position:'top-end',icon:'success',title:'บันทึกแล้ว',showConfirmButton:false,timer:1500}); showCGDDetail(id);
+    }catch(e){ Swal.fire('บันทึกไม่สำเร็จ',(e.message||'')+' — ตรวจว่ารัน SQL_CGD_DETAIL.sql แล้ว','error'); }
+  });
+}
+const CGD_LBL={cgd_name:'รายการ',cgd_unit:'หน่วย',cgd_max_price:'ราคาไม่เกิน',cgd_feature:'ลักษณะ',cgd_indication:'ข้อบ่งชี้',cgd_note:'หมายเหตุแพทย์',cgd_ref:'ตามหนังสือ'};
+$(document).on('click','tr.cgdrow',function(e){ if($(e.target).closest('button').length) return; showCGDDetail(this.dataset.id); });
 
 async function deleteCGDRow(id){
   if(!confirm('ลบรายการนี้?')) return;
