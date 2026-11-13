@@ -843,7 +843,10 @@ button,.btn,a,label,select,input,[onclick],.dtab-btn,tr[onclick]{touch-action:ma
             <div class="fg"><label>ไฟล์ GR (ใบตรวจรับ)</label><input type="file" id="ph-gr" accept=".xlsx,.xls"></div>
             <div class="fg"><label>ไฟล์ AP (ใบแจ้งหนี้)</label><input type="file" id="ph-ap" accept=".xlsx,.xls"></div>
           </div>
-          <button type="button" class="btn btn-primary btn-sm" onclick="importPurchaseHistory()">⬆ นำเข้าประวัติการซื้อ</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="btn btn-primary btn-sm" onclick="importPurchaseHistory()">⬆ นำเข้าประวัติการซื้อ</button>
+            <button type="button" class="btn btn-warning btn-sm" style="background:var(--a0);color:var(--a6);border:1px solid var(--a1)" onclick="fillCostsFromPO()">💰 เติมราคาทุนจาก PO ล่าสุด</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1646,6 +1649,60 @@ async function loadItemHistory(){
     box.innerHTML='<div style="font-size:11.5px;color:var(--s5);margin-bottom:6px">พบ '+out.length+' รายการ (PO '+po.length+' · GR '+gr.length+' · AP '+ap.length+')</div>'
       +'<div style="max-height:340px;overflow:auto;border:1px solid var(--s1);border-radius:8px"><table class="ph-tbl"><thead><tr><th>วันที่ / เอกสาร</th><th>ผู้ขาย</th><th>หน่วยงานขอซื้อ</th><th style="text-align:right">จำนวน / ราคา</th><th>ตรวจรับ (GR)</th><th>ตั้งหนี้ (AP)</th></tr></thead><tbody>'+body+'</tbody></table></div>';
   }catch(e){ box.innerHTML='<div style="padding:20px;color:#991b1b;font-size:12px;word-break:break-word">โหลดประวัติไม่สำเร็จ: '+escHtml(e.message||'')+'<div style="color:var(--s5);margin-top:4px">ตรวจว่ารัน SQL_PURCHASE_HISTORY.sql แล้ว</div></div>'; }
+}
+
+// ===================== COST FROM LATEST PO =====================
+async function latestPOCost(code){
+  const r=await DB.get('item_purchase_history','doc_type=eq.PO&item_code=eq.'+encodeURIComponent(code)+'&unit_price=gt.0&select=unit_price,posting_date,unit,doc_no,vendor_name&order=posting_date.desc.nullslast&limit=1');
+  return r[0]||null;
+}
+async function costHint(it,isAdmin){
+  const box=document.getElementById('cost-hint'); if(!box) return;
+  if(it.sys_cost!=null && Number(it.sys_cost)>0) return;
+  try{
+    const p=await latestPOCost(it.item_code);
+    if(!p){ box.innerHTML='<span style="font-size:11px;color:var(--s4)">ไม่พบราคาในประวัติ PO</span>'; return; }
+    box.innerHTML='<div style="margin-top:4px;padding:6px 9px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:11.5px;color:#92400e;line-height:1.6">💡 ราคา PO ล่าสุด <b>'+phMoney(p.unit_price)+'</b> / '+escHtml(p.unit||'หน่วย')+'<div style="font-size:10.5px;color:#a16207">'+phFmtDate(p.posting_date)+' · PO '+escHtml(p.doc_no)+' · '+escHtml(p.vendor_name||'')+'</div>'
+      +(isAdmin?'<button type="button" class="btn btn-warning btn-sm" id="btn-use-po-cost" style="margin-top:5px">ใช้เป็นราคาทุน</button>':'')+'</div>';
+    const b=document.getElementById('btn-use-po-cost');
+    if(b) b.onclick=async function(){
+      try{
+        b.disabled=true;
+        await DB.patch('items','item_code=eq.'+it.item_code,{sys_cost:p.unit_price});
+        if(typeof logAction==='function') logAction('edit_item',{code:it.item_code,name:it.item_name,changes:[{f:'ราคาทุน',from:'–',to:String(p.unit_price)+' (จาก PO '+p.doc_no+')'}]},'item',it.item_code);
+        it.sys_cost=p.unit_price; const rr=(PS.search.data||[]).find(function(x){return x.item_code===it.item_code;}); if(rr) rr.sys_cost=p.unit_price;
+        document.getElementById('cost-val').textContent=phMoney(p.unit_price); box.innerHTML='<span style="font-size:11px;color:#15803d">✓ บันทึกราคาทุนแล้ว</span>';
+        const ec=document.getElementById('e-cost'); if(ec) ec.value=p.unit_price;
+      }catch(e){ b.disabled=false; Swal.fire('บันทึกไม่สำเร็จ',e.message||'','error'); }
+    };
+  }catch(e){ box.innerHTML=''; }
+}
+// เติมราคาทุนจากประวัติ PO ล่าสุด ทั้งระบบ (เฉพาะรายการที่ยังไม่มีราคาทุน)
+async function fillCostsFromPO(){
+  const ok=await Swal.fire({icon:'question',title:'เติมราคาทุนจากประวัติ PO',html:'<div style="font-size:13px;text-align:left;line-height:1.8">ระบบจะค้นรายการที่<b>ยังไม่มีราคาทุน</b> แล้วเติมด้วยราคา Gross Price ของ PO ล่าสุด<br>รายการที่มีราคาทุนอยู่แล้วจะไม่ถูกแก้</div>',showCancelButton:true,confirmButtonText:'เริ่มตรวจสอบ',cancelButtonText:'ยกเลิก',confirmButtonColor:'#256e4e'});
+  if(!ok.isConfirmed) return;
+  try{
+    Swal.fire({title:'กำลังค้นรายการที่ไม่มีราคาทุน...',allowOutsideClick:false,didOpen:function(){Swal.showLoading();}});
+    const empty=await dbFetchAll('items','or=(sys_cost.is.null,sys_cost.eq.0)&select=item_code,item_name');
+    if(!empty.length){ return Swal.fire('ไม่มีรายการที่ต้องเติม','ทุกรายการมีราคาทุนแล้ว','info'); }
+    Swal.update({title:'กำลังอ่านประวัติ PO...'});
+    const po=await dbFetchAll('item_purchase_history','doc_type=eq.PO&unit_price=gt.0&select=item_code,unit_price,posting_date,doc_no&order=posting_date.desc.nullslast');
+    const latest=new Map(); po.forEach(function(r){ if(!latest.has(r.item_code)) latest.set(r.item_code,r); });
+    const todo=empty.filter(function(x){return latest.has(x.item_code);});
+    if(!todo.length){ return Swal.fire('ไม่พบราคาในประวัติ PO','ตรวจ '+empty.length.toLocaleString()+' รายการที่ไม่มีราคาทุน แต่ไม่พบรหัสตรงกับประวัติ PO (ตรวจว่านำเข้า PO แล้ว)','info'); }
+    const c=await Swal.fire({icon:'info',title:'พบ '+todo.length.toLocaleString()+' รายการที่เติมได้',html:'<div style="font-size:13px;text-align:left;line-height:1.8">ไม่มีราคาทุน '+empty.length.toLocaleString()+' รายการ<br>พบราคาใน PO <b>'+todo.length.toLocaleString()+'</b> รายการ<br>ไม่พบใน PO '+(empty.length-todo.length).toLocaleString()+' รายการ (ไม่แก้)</div>',showCancelButton:true,confirmButtonText:'เติมราคาทุน',cancelButtonText:'ยกเลิก',confirmButtonColor:'#256e4e'});
+    if(!c.isConfirmed) return;
+    Swal.fire({title:'กำลังเติมราคาทุน...',allowOutsideClick:false,didOpen:function(){Swal.showLoading();}});
+    let done=0, fail=0;
+    for(let i=0;i<todo.length;i+=10){
+      await Promise.all(todo.slice(i,i+10).map(async function(x){
+        try{ await DB.patch('items','item_code=eq.'+x.item_code,{sys_cost:latest.get(x.item_code).unit_price}); done++; }catch(e){ fail++; }
+      }));
+      Swal.update({title:'กำลังเติมราคาทุน... '+Math.min(i+10,todo.length).toLocaleString()+' / '+todo.length.toLocaleString()});
+    }
+    if(typeof logAction==='function') logAction('update_prices',{count:done,note:'เติมราคาทุนจากประวัติ PO ล่าสุด',failed:fail},'item','po-cost');
+    Swal.fire({icon:fail?'warning':'success',title:'เติมราคาทุนแล้ว '+done.toLocaleString()+' รายการ',text:fail?('ไม่สำเร็จ '+fail+' รายการ'):'',confirmButtonColor:'#256e4e'});
+  }catch(e){ Swal.fire('ไม่สำเร็จ',e.message||'','error'); }
 }
 
 // ===================== GLOBAL ERROR POPUP =====================
@@ -2637,10 +2694,10 @@ function openItemDetail(idx){
         <tr><td style="padding:5px 8px;color:var(--s5)">MSType</td><td style="padding:5px 8px">${getMsName(it.u_ntt_ms_type || it.u_ntt_asset_pur)}</td></tr>
         <tr style="background:var(--s0)"><td style="padding:5px 8px;color:var(--s5)">Interface</td><td style="padding:5px 8px">${it.u_ntt_interface||'N'}</td></tr>
         <tr><td style="padding:5px 8px;color:var(--s5)">ประเภทรายการ</td><td style="padding:5px 8px">
-          <span style="display:inline-flex;gap:10px;flex-wrap:wrap">
-            <span>${(it.purchase_item||'N')==='Y'?'☑':'☐'} PurchaseItem <b>${it.purchase_item||'N'}</b></span>
-            <span>${(it.sales_item||'N')==='Y'?'☑':'☐'} SalesItem <b>${it.sales_item||'N'}</b></span>
-            <span>${(it.inventory_item||'N')==='Y'?'☑':'☐'} InventoryItem <b>${it.inventory_item||'N'}</b></span>
+          <span style="display:inline-flex;gap:6px 8px;flex-wrap:wrap">
+            ${(it.purchase_item||'N')==='Y'?'<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 11px 4px 6px;border-radius:20px;background:#16a34a;color:#fff;font-weight:600;font-size:12px;box-shadow:0 1px 4px rgba(22,163,74,.35)"><span style="width:17px;height:17px;border-radius:50%;background:#fff;color:#16a34a;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;line-height:1">✓</span>PurchaseItem</span>':'<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 11px 4px 6px;border-radius:20px;background:#f1f5f9;color:#94a3b8;border:1px dashed #cbd5e1;font-size:12px"><span style="width:17px;height:17px;border-radius:50%;border:1.5px solid #cbd5e1;display:inline-block"></span>PurchaseItem</span>'}
+            ${(it.sales_item||'N')==='Y'?'<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 11px 4px 6px;border-radius:20px;background:#16a34a;color:#fff;font-weight:600;font-size:12px;box-shadow:0 1px 4px rgba(22,163,74,.35)"><span style="width:17px;height:17px;border-radius:50%;background:#fff;color:#16a34a;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;line-height:1">✓</span>SalesItem</span>':'<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 11px 4px 6px;border-radius:20px;background:#f1f5f9;color:#94a3b8;border:1px dashed #cbd5e1;font-size:12px"><span style="width:17px;height:17px;border-radius:50%;border:1.5px solid #cbd5e1;display:inline-block"></span>SalesItem</span>'}
+            ${(it.inventory_item||'N')==='Y'?'<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 11px 4px 6px;border-radius:20px;background:#16a34a;color:#fff;font-weight:600;font-size:12px;box-shadow:0 1px 4px rgba(22,163,74,.35)"><span style="width:17px;height:17px;border-radius:50%;background:#fff;color:#16a34a;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;line-height:1">✓</span>InventoryItem</span>':'<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 11px 4px 6px;border-radius:20px;background:#f1f5f9;color:#94a3b8;border:1px dashed #cbd5e1;font-size:12px"><span style="width:17px;height:17px;border-radius:50%;border:1.5px solid #cbd5e1;display:inline-block"></span>InventoryItem</span>'}
           </span></td></tr>
       </table>
       <table class="dtab-panel" data-tab="2" style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:14px">
@@ -2648,7 +2705,7 @@ function openItemDetail(idx){
         <tr style="background:var(--s0)"><td style="padding:5px 8px;color:var(--s5)">คลัง Default</td><td style="padding:5px 8px">${it.default_warehouse||'–'}</td></tr>
         <tr><td style="padding:5px 8px;color:var(--s5)">VAT Group</td><td style="padding:5px 8px">${it.purchase_vat_group||'–'}</td></tr>
         <tr style="background:var(--s0)"><td style="padding:5px 8px;color:var(--s5)">GL Method</td><td style="padding:5px 8px;font-family:monospace;font-weight:600">${it.gl_method||'–'}</td></tr>
-        <tr><td style="padding:5px 8px;color:var(--s5)">ราคาทุน</td><td style="padding:5px 8px;font-weight:600;font-family:monospace">${it.sys_cost!=null?Number(it.sys_cost).toLocaleString('th-TH',{minimumFractionDigits:2}):'–'} บาท</td></tr>
+        <tr><td style="padding:5px 8px;color:var(--s5)">ราคาทุน</td><td style="padding:5px 8px;font-weight:600;font-family:monospace"><span id="cost-val">${it.sys_cost!=null&&Number(it.sys_cost)>0?Number(it.sys_cost).toLocaleString('th-TH',{minimumFractionDigits:2}):'–'}</span> บาท<div id="cost-hint" style="font-family:'IBM Plex Sans Thai',sans-serif;font-weight:400"></div></td></tr>
         <tr style="background:var(--s0)"><td style="padding:5px 8px;color:var(--s5)">ราคาขาย</td><td style="padding:5px 8px;font-weight:600;color:var(--r6);font-family:monospace">${it.sys_price!=null?Number(it.sys_price).toLocaleString('th-TH'):'–'} บาท</td></tr>
         <tr><td style="padding:5px 8px;color:var(--s5)">ผู้ขอออกรหัส</td><td style="padding:5px 8px">${it.creator_name||'–'}</td></tr>
         <tr style="background:var(--s0)"><td style="padding:5px 8px;color:var(--s5)">เลขที่ใบงาน</td><td style="padding:5px 8px;font-family:monospace">${it.doc_num||'–'}</td></tr>
@@ -2718,7 +2775,7 @@ function openItemDetail(idx){
       <button class="btn btn-outline btn-sm" onclick="$('#edit-mode').hide();$('#view-mode').show();">ยกเลิก</button>
     </div>
   </div>`;
-  Swal.fire({title:'',html,showConfirmButton:false,showCloseButton:true,width:'850px',didOpen:()=>{ initEditPhotos(it,isAdmin); bindSingleStatusToggle(); bindChipCheckbox('#e-purchaseItem','#chip-e-purchaseItem'); bindChipCheckbox('#e-salesItem','#chip-e-salesItem'); bindChipCheckbox('#e-inventoryItem','#chip-e-inventoryItem'); bindChipCheckbox('#e-sap','#chip-e-sap'); bindChipCheckbox('#e-his','#chip-e-his'); bindChipCheckbox('#e-inactive','#chip-e-inactive'); bindDetailTabs(); }});
+  Swal.fire({title:'',html,showConfirmButton:false,showCloseButton:true,width:'850px',didOpen:()=>{ costHint(it,isAdmin); initEditPhotos(it,isAdmin); bindSingleStatusToggle(); bindChipCheckbox('#e-purchaseItem','#chip-e-purchaseItem'); bindChipCheckbox('#e-salesItem','#chip-e-salesItem'); bindChipCheckbox('#e-inventoryItem','#chip-e-inventoryItem'); bindChipCheckbox('#e-sap','#chip-e-sap'); bindChipCheckbox('#e-his','#chip-e-his'); bindChipCheckbox('#e-inactive','#chip-e-inactive'); bindDetailTabs(); }});
 }
 
 // [mobile-tabs] แท็บดูทีละหน้า — เฉพาะมือถือ (CSS ซ่อนบนจอกว้าง)
