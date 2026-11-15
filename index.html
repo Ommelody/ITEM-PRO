@@ -976,6 +976,7 @@ tr.mrow{cursor:pointer}tr.mrow:hover td{background:#f0fdf4}
           <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
             <input type="file" id="cgd-file" accept=".xlsx,.xls" style="flex:1;min-width:200px">
             <button class="btn btn-primary btn-sm" onclick="importCGDExcel()">⬆ นำเข้า Excel</button>
+            <button class="btn btn-warning btn-sm" style="background:var(--a0);color:var(--a6);border:1px solid var(--a1)" onclick="restoreCGDFromItems()" title="สร้างรหัสที่พัสดุใช้อยู่กลับเข้าตาราง">♻️ กู้คืนจากพัสดุ</button>
             <button class="btn btn-danger btn-sm" onclick="clearAllCGD()">🗑️ ล้างข้อมูลทั้งหมด</button>
           </div>
           <div style="display:flex;gap:8px;margin-bottom:12px">
@@ -1728,6 +1729,56 @@ function showGlobalError(title, e){
     if(typeof logAction==='function') logAction('client_error',{msg,where:title},'system','');
   }catch(_){}
 }
+// ===================== ERROR LOGGING + READABLE MESSAGES =====================
+const ERR_HINTS={
+  PGRST102:'ข้อมูลแต่ละแถวมีฟิลด์ไม่เท่ากัน',PGRST204:'ไม่พบคอลัมน์ในฐานข้อมูล (ต้องรัน SQL เพิ่มคอลัมน์)',PGRST205:'ไม่พบตารางในฐานข้อมูล (ต้องรัน SQL สร้างตาราง)',
+  '42703':'ไม่พบคอลัมน์ในฐานข้อมูล (ต้องรัน SQL เพิ่มคอลัมน์)','42P01':'ไม่พบตารางในฐานข้อมูล (ต้องรัน SQL สร้างตาราง)',
+  '42501':'ไม่มีสิทธิ์เขียน/อ่านตารางนี้ (นโยบาย RLS)','23505':'ข้อมูลซ้ำกับที่มีอยู่แล้ว (รหัสหรือค่าที่ห้ามซ้ำ)','23502':'ขาดข้อมูลที่จำเป็น (ช่องที่ห้ามว่าง)','23503':'อ้างอิงข้อมูลที่ไม่มีอยู่/ถูกใช้งานอยู่','22P02':'รูปแบบข้อมูลไม่ถูกต้อง (เช่น ใส่ข้อความในช่องตัวเลข)','22001':'ข้อความยาวเกินที่กำหนด'
+};
+function parseDbError(raw){
+  let code='',msg=String(raw||''),details='';
+  try{ const j=JSON.parse(msg); code=j.code||''; msg=j.message||msg; details=j.details||j.hint||''; }catch(_){}
+  return {code,msg,details,hint:ERR_HINTS[code]||''};
+}
+let _errLogAt={};
+function logErr(action,detail){
+  try{
+    const k=action+'|'+(detail.where||'')+'|'+(detail.message||'');
+    const now=Date.now(); if(_errLogAt[k]&&now-_errLogAt[k]<4000) return; _errLogAt[k]=now;
+    if(typeof logAction==='function') logAction(action,detail,'system',detail.table||'');
+  }catch(_){}
+}
+(function wrapDB(){
+  if(typeof DB==='undefined') return;
+  ['get','post','patch','delete','rpc'].forEach(function(m){
+    const orig=DB[m]; if(typeof orig!=='function') return;
+    DB[m]=async function(){
+      const args=arguments;
+      try{ return await orig.apply(DB,args); }
+      catch(e){
+        const p=parseDbError(e&&e.message);
+        const where=m.toUpperCase()+' '+args[0];
+        const friendly=(p.hint?p.hint+' — ':'')+p.msg+(p.code?' ['+p.code+']':'');
+        const ne=new Error('['+where+'] '+friendly); ne.code=p.code; ne.raw=e&&e.message;
+        if(args[0]!=='activity_logs') logErr('api_error',{where:where,table:String(args[0]),code:p.code,message:p.msg,hint:p.hint,details:p.details});
+        throw ne;
+      }
+    };
+  });
+})();
+(function wrapSwalError(){
+  if(typeof Swal==='undefined'||!Swal.fire) return;
+  const orig=Swal.fire.bind(Swal);
+  Swal.fire=function(a,b,c){
+    try{
+      let isErr=false,title='',text='';
+      if(typeof a==='object'&&a){ isErr=a.icon==='error'; title=a.title||''; text=String(a.text||a.html||'').replace(/<[^>]+>/g,' '); }
+      else { isErr=c==='error'; title=a||''; text=b||''; }
+      if(isErr) logErr('ui_error',{where:String(title),message:String(text).trim().slice(0,500)});
+    }catch(_){}
+    return orig.apply(Swal,arguments);
+  };
+})();
 window.addEventListener('error', ev=> showGlobalError('เกิดข้อผิดพลาดในระบบ', ev.error || ev.message));
 window.addEventListener('unhandledrejection', ev=> showGlobalError('การทำงานไม่สำเร็จ', ev.reason));
 
@@ -1836,7 +1887,7 @@ $(function(){ restoreSession(); });
 
 // ===================== ACTIVITY LOG VIEWER =====================
 PS.logs = { data: [] };
-const LOG_LABELS = {login:'เข้าสู่ระบบ',logout:'ออกจากระบบ',create_job:'ออกรหัส/บันทึกใบงาน',edit_item:'แก้ไขไอเทม',approve_item:'อนุมัติไอเทม',delete_item:'ลบไอเทม',delete_job:'ลบใบงาน',master_add:'เพิ่มข้อมูลหลัก',master_delete:'ลบข้อมูลหลัก',export:'Export ข้อมูล',pr_issue:'ส่งรหัสกลับ PR ORDER',br_issue:'ส่งรหัสกลับ BRPR',import:'นำเข้าข้อมูล',import_history:'นำเข้าประวัติการซื้อ',master_edit:'ข้อมูลหลัก (แก้ไขชื่อ)',register:'สมัครผู้ใช้ใหม่',change_role:'เปลี่ยนสิทธิ์ผู้ใช้',delete_user:'ลบผู้ใช้',edit_profile:'แก้ไขโปรไฟล์',update_prices:'อัปเดตราคา (นำเข้า)',delete_all:'ลบข้อมูลทั้งหมด',rev_save:'หมวดรายได้ (เพิ่ม/แก้ไข)',rev_delete:'ลบหมวดรายได้',cgd_import:'นำเข้ารหัสกรมบัญชีกลาง',cgd_delete:'ลบรหัสกรมบัญชีกลาง',client_error:'ข้อผิดพลาดในระบบ'};
+const LOG_LABELS = {api_error:'ข้อผิดพลาดฐานข้อมูล/API',ui_error:'ข้อผิดพลาด (แจ้งผู้ใช้)',client_error:'ข้อผิดพลาดระบบ',login:'เข้าสู่ระบบ',logout:'ออกจากระบบ',create_job:'ออกรหัส/บันทึกใบงาน',edit_item:'แก้ไขไอเทม',approve_item:'อนุมัติไอเทม',delete_item:'ลบไอเทม',delete_job:'ลบใบงาน',master_add:'เพิ่มข้อมูลหลัก',master_delete:'ลบข้อมูลหลัก',export:'Export ข้อมูล',pr_issue:'ส่งรหัสกลับ PR ORDER',br_issue:'ส่งรหัสกลับ BRPR',import:'นำเข้าข้อมูล',import_history:'นำเข้าประวัติการซื้อ',master_edit:'ข้อมูลหลัก (แก้ไขชื่อ)',register:'สมัครผู้ใช้ใหม่',change_role:'เปลี่ยนสิทธิ์ผู้ใช้',delete_user:'ลบผู้ใช้',edit_profile:'แก้ไขโปรไฟล์',update_prices:'อัปเดตราคา (นำเข้า)',delete_all:'ลบข้อมูลทั้งหมด',rev_save:'หมวดรายได้ (เพิ่ม/แก้ไข)',rev_delete:'ลบหมวดรายได้',cgd_import:'นำเข้ารหัสกรมบัญชีกลาง',cgd_delete:'ลบรหัสกรมบัญชีกลาง',client_error:'ข้อผิดพลาดในระบบ'};
 const FLD_LABELS = {cgd_name:'รายการ',cgd_unit:'หน่วย',cgd_max_price:'ราคาไม่เกิน',cgd_feature:'ลักษณะ',cgd_indication:'ข้อบ่งชี้',cgd_note:'หมายเหตุแพทย์',cgd_ref:'ตามหนังสือ',item_name:'ชื่อสินค้า',item_name_en:'ชื่อสินค้า (EN)',trade_name:'ชื่อการค้า',alias_name:'Alias',old_code:'รหัสเดิม',ref_no:'Ref.No',barcode:'Barcode',u_ntt_remark:'หมายเหตุ',cgd_code:'รหัสกรมบัญชีกลาง',u_ntt_revenue_cat:'หมวดรายได้',u_ntt_ms_type:'MSType',u_ntt_asset_pur:'MSType (ครุภัณฑ์)',items_group_code:'กลุ่มบัญชี',items_group_text:'ชื่อกลุ่มบัญชี',default_warehouse:'คลัง Default',inventory_uom:'หน่วยคลัง',inventory_uom_entry:'หน่วยคลัง (Entry)',sys_uom_name:'หน่วยนับ',purchase_vat_group:'VAT Group',u_ntt_interface:'Interface',purchase_item:'PurchaseItem',sales_item:'SalesItem',inventory_item:'InventoryItem',sys_cost:'ราคาทุน',sys_price:'ราคาขาย',status:'สถานะอนุมัติ',sync_sap:'Sync SAP',sync_his:'Sync HIS',is_inactive:'Inactive',issue_method:'Issue Method',photo1_url:'รูปภาพ 1',photo2_url:'รูปภาพ 2'};
 function fmtVal(v){ if(v===null||v===undefined||v==='') return '–'; if(v===true) return 'ใช่'; if(v===false) return 'ไม่'; return String(v); }
 // เทียบค่าเดิม/ใหม่ → [{f,from,to}] เฉพาะที่เปลี่ยนจริง
@@ -2375,7 +2426,7 @@ $('#btn-process').on('click',async function(){
         u_ntt_ref_no:c.refNo||null,
         u_ntt_barcode:c.barcode||null,
         u_ntt_cgd_code:c.cgdCode||null,  // [1]
-        ...(c.revCat?{u_ntt_revenue_cat:c.revCat}:{}),
+        u_ntt_revenue_cat:c.revCat||null,
         u_ntt_remark: c.prRequestId ? `รายการออกรหัสจาก PR ORDER${c.prRef ? ` (เลขที่ ${c.prRef})` : ''}`
                     : c.brRequestId ? `รายการออกรหัสจาก BRPR${c.brId ? ` (เลขที่ BR ${c.brId})` : ''}` : null, // [1] หมายเหตุที่มาของรายการ + เลขที่ PR/BR
         item_name:c.itemName,foreign_name:c.engName||c.itemName,
@@ -3890,6 +3941,19 @@ async function importCGDExcel(){
 }
 
 // ===================== CGD: อัตราอุปกรณ์อวัยวะเทียม (รายละเอียด) =====================
+// กู้รหัสกรมบัญชีกลางที่ "พัสดุใช้อยู่" กลับเข้าตาราง (ชื่อตามที่บันทึกในพัสดุ ค่า CGD Code เดิมไม่เปลี่ยน)
+async function restoreCGDFromItems(silent){
+  const used=await dbFetchAll('items','select=u_ntt_cgd_code&u_ntt_cgd_code=not.is.null');
+  const want=new Map();
+  used.forEach(function(x){ const v=String(x.u_ntt_cgd_code||'').trim(); const i=v.indexOf(':'); if(i>0){ const c=v.slice(0,i).trim(); if(!want.has(c)) want.set(c,{cgd_code:c,cgd_name:v.slice(i+1).trim(),cgd_full:v}); } });
+  const have=await dbFetchAll('db_cgd_codes','select=cgd_code');
+  const hs=new Set(have.map(function(r){return String(r.cgd_code);}));
+  const add=Array.from(want.values()).filter(function(x){return !hs.has(x.cgd_code);});
+  for(let i=0;i<add.length;i+=100) await DB.post('db_cgd_codes',add.slice(i,i+100));
+  if(add.length && typeof logAction==='function') logAction('cgd_import',{count:add.length,note:'กู้คืนจากพัสดุที่ใช้อยู่'},'master','cgd');
+  if(!silent){ await loadCGDPage(); Swal.fire({icon:add.length?'success':'info',title:add.length?'กู้คืนแล้ว '+add.length+' รหัส':'ไม่มีรหัสที่ต้องกู้',text:add.length?'เป็นรหัสที่พัสดุใช้อยู่ ส่วนรหัสอื่นให้นำเข้าไฟล์รายการเต็มอีกครั้ง':'',confirmButtonColor:'#256e4e'}); }
+  return add.length;
+}
 async function importCGDDetail(json){
   const items=[]; let cur=null;
   const strip=function(s,p){ return String(s||'').trim().replace(new RegExp('^'+p+'\\s*:\\s*'),'').trim(); };
@@ -3897,7 +3961,7 @@ async function importCGDDetail(json){
     const b=String(row[1]==null?'':row[1]).trim(), c=String(row[2]==null?'':row[2]).trim();
     if(b && !isNaN(parseInt(b)) && /^รายการ\s*:/.test(c)){
       const price=parseFloat(String(row[4]==null?'':row[4]).replace(/,/g,''));
-      cur={cgd_code:b,cgd_name:strip(c,'รายการ'),cgd_unit:String(row[3]||'').trim(),cgd_max_price:isNaN(price)?null:price};
+      cur={cgd_code:b,cgd_name:strip(c,'รายการ').replace(/^\d+(\.\d+)*\s*/,''),cgd_unit:String(row[3]||'').trim(),cgd_max_price:isNaN(price)?null:price};
       items.push(cur);
     } else if(cur && c){
       if(/^ลักษณะ\s*:/.test(c)) cur.cgd_feature=strip(c,'ลักษณะ');
@@ -3908,6 +3972,7 @@ async function importCGDDetail(json){
   });
   const seen=new Set(), list=items.filter(function(x){ if(seen.has(x.cgd_code)) return false; seen.add(x.cgd_code); return true; });
   if(!list.length) return Swal.fire('แจ้งเตือน','ไม่พบรายการในไฟล์','warning');
+  let restored=0; try{ restored=await restoreCGDFromItems(true); }catch(e){}
   const existing=await dbFetchAll('db_cgd_codes','select=id,cgd_code&order=id.asc');
   const byCode=new Map(); existing.forEach(function(r){ if(!byCode.has(String(r.cgd_code))) byCode.set(String(r.cgd_code),r); });
   const upd=list.filter(function(x){return byCode.has(x.cgd_code);}), add=list.filter(function(x){return !byCode.has(x.cgd_code);});
@@ -3927,7 +3992,7 @@ async function importCGDDetail(json){
   if(typeof logAction==='function') logAction('cgd_import',{count:list.length,updated:upd.length,added:add.length,failed:fail,note:'อัตราอุปกรณ์อวัยวะเทียม'},'master','cgd');
   document.getElementById('cgd-file').value='';
   await loadCGDPage();
-  Swal.fire({icon:fail?'warning':'success',title:'นำเข้าสำเร็จ',html:'อัปเดต '+(upd.length-fail)+' · เพิ่มใหม่ '+add.length+(fail?' · ไม่สำเร็จ '+fail:''),confirmButtonColor:'#256e4e'});
+  Swal.fire({icon:fail?'warning':'success',title:'นำเข้าสำเร็จ',html:'อัปเดต '+(upd.length-fail)+' · เพิ่มใหม่ '+add.length+(restored?' · กู้จากพัสดุ '+restored:'')+(fail?' · ไม่สำเร็จ '+fail:''),confirmButtonColor:'#256e4e'});
 }
 function cgdField(label,val){ return '<div style="margin-bottom:10px"><div style="font-size:11px;color:var(--s5);font-weight:600;margin-bottom:2px">'+label+'</div><div style="font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word">'+(val?escHtml(String(val)):'<span style="color:var(--s4)">–</span>')+'</div></div>'; }
 function showCGDDetail(id){
@@ -3978,9 +4043,15 @@ async function deleteCGDRow(id){
 }
 
 async function clearAllCGD(){
-  const cf = await Swal.fire({title:'ล้างข้อมูลทั้งหมด?',text:'รายการรหัสกรมบัญชีกลางทั้งหมดจะถูกลบ',icon:'warning',showCancelButton:true,confirmButtonColor:'#dc2626',confirmButtonText:'ล้างทั้งหมด',cancelButtonText:'ยกเลิก'});
+  const cf = await Swal.fire({title:'ล้างข้อมูลรหัสกรมบัญชีกลางทั้งหมด?',icon:'warning',showCancelButton:true,confirmButtonColor:'#dc2626',confirmButtonText:'ล้างทั้งหมด',cancelButtonText:'ยกเลิก',
+    html:'<div style="font-size:13px;text-align:left;line-height:1.8">จะลบ <b>'+CGD_DATA.length.toLocaleString()+'</b> รายการ และ<b>กู้คืนไม่ได้</b><br>ระบบจะดาวน์โหลดไฟล์สำรอง (CSV) ให้ก่อนลบ<br>พิมพ์ <b style="color:#dc2626">ลบทั้งหมด</b> เพื่อยืนยัน</div>',
+    input:'text',inputPlaceholder:'ลบทั้งหมด',preConfirm:function(v){ if((v||'').trim()!=='ลบทั้งหมด'){ Swal.showValidationMessage('พิมพ์คำว่า ลบทั้งหมด ให้ถูกต้อง'); return false; } return true; }});
   if(!cf.isConfirmed)return;
   try{
+    const cols=['cgd_code','cgd_name','cgd_full','cgd_unit','cgd_max_price','cgd_feature','cgd_indication','cgd_note','cgd_ref'];
+    const q=function(v){ const s=String(v==null?'':v); return '"'+s.replace(/"/g,'""')+'"'; };
+    const csv='\ufeff'+cols.join(',')+'\r\n'+CGD_DATA.map(function(r){return cols.map(function(c){return q(r[c]);}).join(',');}).join('\r\n');
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download='backup-cgd-'+new Date().toISOString().slice(0,10)+'.csv'; document.body.appendChild(a); a.click(); a.remove();
     await DB.delete('db_cgd_codes','id=gte.0');
     if(typeof logAction==='function')logAction('cgd_delete',{all:true},'master',"all");
     CGD_DATA=[];CGD_PS.filtered=[];
