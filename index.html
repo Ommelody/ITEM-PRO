@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Item Master Pro V2 — ศูนย์การแพทย์ธรรมศาสตร์</title>
+<title>Item Master Pro V.3 — ศูนย์การแพทย์ธรรมศาสตร์</title>
 <meta name="description" content="ระบบออกรหัสพัสดุ ศูนย์การแพทย์ธรรมศาสตร์">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Item Master Pro V2">
+<meta property="og:title" content="Item Master Pro V.3">
 <meta property="og:description" content="ระบบออกรหัสพัสดุ ศูนย์การแพทย์ธรรมศาสตร์">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="shortcut icon" href="favicon.ico">
@@ -347,6 +347,14 @@ button,.btn,a,label,select,input,[onclick],.dtab-btn,tr[onclick]{touch-action:ma
 .ph-tbl th{background:var(--s0);color:var(--s5);font-weight:600;text-align:left;padding:6px 8px;white-space:nowrap;position:sticky;top:0}
 .ph-tbl td{padding:6px 8px;border-top:1px solid var(--s1);vertical-align:top}
 .ph-sub{color:var(--s5);font-size:10.5px}
+.ann-card{background:#fff;border:1px solid var(--s2);border-radius:14px;padding:18px 20px;margin-bottom:14px}
+.ann-card.pin{border-color:#bbf7d0;box-shadow:0 2px 10px rgba(22,163,74,.08)}
+.ann-h{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.ann-t{flex:1;min-width:200px;font-size:16px;font-weight:700;color:var(--g8)}
+.ann-d{font-size:11.5px;color:var(--s5);margin-top:2px;font-weight:400}
+.ann-b{font-size:13.5px;line-height:1.75;color:var(--s8);word-break:break-word}
+.ann-b h4{font-size:13.5px;font-weight:700;color:var(--g7);margin:14px 0 4px;padding-bottom:3px;border-bottom:1px solid var(--s1)}
+.ann-b ul{margin:2px 0 4px;padding-left:20px}.ann-b li{margin:2px 0}.ann-b p{margin:4px 0}
 .qs-box{position:relative;display:flex;align-items:center;margin-right:12px}
 .qs-box .qs-ic{position:absolute;left:11px;font-size:12px;opacity:.55;pointer-events:none}
 #qs-input{width:280px;max-width:34vw;padding:8px 12px 8px 32px;border:1px solid var(--s2);border-radius:20px;background:var(--s0);font-size:13px;font-family:inherit;color:var(--s8);outline:none;transition:border-color .15s,box-shadow .15s,background .15s}
@@ -386,7 +394,7 @@ tr.mrow{cursor:pointer}tr.mrow:hover td{background:#f0fdf4}
   <div class="auth-box">
     <div class="auth-logo">
       <img src="icon.png" alt="SAP Logo" class="mark-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/10103/10103756.png'">
-      <h2>Item Master Pro V2</h2>
+      <h2>Item Master Pro V.3</h2>
       <p>ศูนย์การแพทย์ธรรมศาสตร์</p>
     </div>
     <div class="auth-tabs">
@@ -421,7 +429,7 @@ tr.mrow{cursor:pointer}tr.mrow:hover td{background:#f0fdf4}
   <aside class="sidebar">
     <div class="brand">
       <img src="icon.png" alt="SAP Logo" class="brand-img" onerror="this.style.display='none'">
-      <h1>Item Master Pro V2</h1>
+      <h1>Item Master Pro V.3</h1>
       <p>ศูนย์การแพทย์ธรรมศาสตร์</p>
     </div>
     <div class="sec-label">เมนูหลัก</div>
@@ -429,6 +437,7 @@ tr.mrow{cursor:pointer}tr.mrow:hover td{background:#f0fdf4}
     <div class="nav-item" data-page="page-history"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><span>ประวัติใบงาน</span></div>
     <div class="nav-item" data-page="page-search"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 111 11a6 6 0 0116 0z"/></svg><span>ค้นหา / จัดการสถานะ</span></div>
     <div class="nav-item" data-page="page-export"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg><span>Export CSV / DTW</span></div>
+    <div class="nav-item" data-page="page-announce"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg><span>ประกาศ</span><i id="ann-dot" style="display:none;width:8px;height:8px;border-radius:50%;background:#dc2626;margin-left:auto"></i></div>
     <div class="sec-label admin-only">จัดการระบบ</div>
     <div class="nav-item admin-only" data-page="page-master"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg><span>ข้อมูลหลัก (Master)</span></div>
     <div class="nav-item admin-only" data-page="page-users"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-5-4M9 20H4v-2a4 4 0 015-4m6 0a4 4 0 10-8 0 4 4 0 008 0zm6-8a4 4 0 10-8 0 4 4 0 008 0z"/></svg><span>จัดการผู้ใช้งาน</span></div>
@@ -862,6 +871,15 @@ tr.mrow{cursor:pointer}tr.mrow:hover td{background:#f0fdf4}
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- ANNOUNCEMENTS -->
+    <div class="page" id="page-announce">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px;font-size:13px;color:var(--s5)">ประกาศและการอัปเดตระบบ</div>
+        <button type="button" class="btn btn-primary btn-sm admin-only" onclick="annEdit()">+ เพิ่มประกาศ</button>
+      </div>
+      <div id="ann-list"></div>
     </div>
 
     <!-- LINE NOTIFY SETTINGS -->
@@ -1788,6 +1806,69 @@ function qsOpen(i,fromList){
   },120);
 }
 
+// ===================== ANNOUNCEMENTS =====================
+function annFmt(t){
+  const lines=String(t||'').split(/\r?\n/); let out='', inUl=false;
+  const close=function(){ if(inUl){ out+='</ul>'; inUl=false; } };
+  lines.forEach(function(raw){
+    const s=raw.replace(/\s+$/,'');
+    if(/^##\s+/.test(s)){ close(); out+='<h4>'+escHtml(s.replace(/^##\s+/,''))+'</h4>'; }
+    else if(/^[-•]\s+/.test(s)){ if(!inUl){ out+='<ul>'; inUl=true; } out+='<li>'+escHtml(s.replace(/^[-•]\s+/,''))+'</li>'; }
+    else if(!s.trim()){ close(); }
+    else { close(); out+='<p>'+escHtml(s)+'</p>'; }
+  }); close(); return out;
+}
+let ANN=[];
+function annDate(d){ if(!d) return ''; const x=new Date(d); return x.toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'}); }
+async function annLoad(){
+  const box=document.getElementById('ann-list'); if(!box) return;
+  box.innerHTML='<div style="padding:30px;text-align:center;color:var(--s5)">กำลังโหลด...</div>';
+  try{
+    ANN=await DB.get('announcements','select=*&order=pinned.desc,created_at.desc&limit=100');
+    const isAdm=CU&&CU.role==='admin';
+    box.innerHTML=ANN.length?ANN.map(function(a){
+      return '<div class="ann-card'+(a.pinned?' pin':'')+'"><div class="ann-h"><div class="ann-t">'+(a.pinned?'📌 ':'')+escHtml(a.title)+'<div class="ann-d">'+annDate(a.created_at)+(a.updated_at&&a.updated_at!==a.created_at&&(new Date(a.updated_at)-new Date(a.created_at))>60000?' · แก้ไขล่าสุด '+annDate(a.updated_at):'')+(a.author?' · '+escHtml(a.author):'')+'</div></div>'
+        +(isAdm?'<div style="display:flex;gap:6px"><button type="button" class="btn btn-outline btn-xs" onclick="annEdit('+a.id+')">แก้ไข</button><button type="button" class="btn btn-outline btn-xs" style="color:var(--r6)" onclick="annDel('+a.id+')">ลบ</button></div>':'')
+        +'</div><div class="ann-b">'+annFmt(a.body)+'</div></div>';
+    }).join(''):'<div style="padding:40px;text-align:center;color:var(--s4)">ยังไม่มีประกาศ</div>';
+    if(ANN.length){ const mx=ANN.reduce(function(m,a){return String(a.updated_at||a.created_at)>m?String(a.updated_at||a.created_at):m;},''); try{localStorage.setItem('ann_seen',mx);}catch(_){} }
+    const dot=document.getElementById('ann-dot'); if(dot) dot.style.display='none';
+  }catch(e){ box.innerHTML='<div style="padding:24px;color:#991b1b;font-size:12.5px;word-break:break-word">โหลดประกาศไม่สำเร็จ: '+escHtml(e.message||'')+'<div style="color:var(--s5);margin-top:4px">ตรวจว่ารัน SQL_ANNOUNCE.sql แล้ว</div></div>'; }
+}
+async function annBadge(){
+  try{
+    const r=await DB.get('announcements','select=created_at,updated_at&order=updated_at.desc.nullslast&limit=1');
+    if(!r.length) return; const mx=String(r[0].updated_at||r[0].created_at);
+    let seen=''; try{seen=localStorage.getItem('ann_seen')||'';}catch(_){}
+    const dot=document.getElementById('ann-dot'); if(dot&&mx>seen) dot.style.display='block';
+  }catch(_){}
+}
+async function annEdit(id){
+  const a=id?ANN.find(function(x){return x.id===id;}):null;
+  const f='width:100%;padding:9px 12px;border:1px solid var(--s2);border-radius:var(--rad);font-family:inherit;font-size:13px;box-sizing:border-box';
+  const r=await Swal.fire({title:a?'แก้ไขประกาศ':'เพิ่มประกาศ',width:'720px',showCancelButton:true,confirmButtonText:'บันทึก',cancelButtonText:'ยกเลิก',confirmButtonColor:'#256e4e',
+    html:'<div style="text-align:left"><label style="font-size:12px;font-weight:600">หัวข้อ</label><input id="an-t" style="'+f+';margin:4px 0 10px" value="'+escHtml(a?a.title:'')+'">'
+      +'<label style="font-size:12px;font-weight:600">รายละเอียด</label><textarea id="an-b" rows="14" style="'+f+';margin:4px 0 6px;resize:vertical;line-height:1.6">'+escHtml(a?a.body:'')+'</textarea>'
+      +'<div style="font-size:11px;color:var(--s5);margin-bottom:10px">รูปแบบ: <b>## หัวข้อย่อย</b> · <b>- รายการ</b> · เว้นบรรทัดเพื่อขึ้นย่อหน้าใหม่</div>'
+      +'<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="an-p"'+(!a||a.pinned?' checked':'')+' style="width:auto"> 📌 ปักหมุดไว้บนสุด</label></div>',
+    preConfirm:function(){ const t=document.getElementById('an-t').value.trim(), b=document.getElementById('an-b').value; if(!t){Swal.showValidationMessage('กรุณากรอกหัวข้อ');return false;} return {title:t,body:b,pinned:document.getElementById('an-p').checked}; }});
+  if(!r.isConfirmed) return;
+  try{
+    const now=new Date().toISOString();
+    if(a){ await DB.patch('announcements','id=eq.'+a.id,{title:r.value.title,body:r.value.body,pinned:r.value.pinned,updated_at:now}); if(typeof logAction==='function') logAction('edit_announce',{title:r.value.title},'announce',String(a.id)); }
+    else { await DB.post('announcements',{title:r.value.title,body:r.value.body,pinned:r.value.pinned,author:CU?CU.name:'',created_at:now,updated_at:now}); if(typeof logAction==='function') logAction('add_announce',{title:r.value.title},'announce',''); }
+    annLoad();
+    Swal.fire({toast:true,position:'top-end',icon:'success',title:'บันทึกประกาศแล้ว',showConfirmButton:false,timer:1800});
+  }catch(e){ Swal.fire({icon:'error',title:'บันทึกไม่สำเร็จ',text:e.message||'',confirmButtonColor:'#256e4e'}); }
+}
+async function annDel(id){
+  const a=ANN.find(function(x){return x.id===id;}); if(!a) return;
+  const r=await Swal.fire({icon:'warning',title:'ลบประกาศนี้?',text:a.title,showCancelButton:true,confirmButtonText:'ลบ',cancelButtonText:'ยกเลิก',confirmButtonColor:'#dc2626'});
+  if(!r.isConfirmed) return;
+  try{ await DB.delete('announcements','id=eq.'+id); if(typeof logAction==='function') logAction('delete_announce',{title:a.title},'announce',String(id)); annLoad(); }
+  catch(e){ Swal.fire({icon:'error',title:'ลบไม่สำเร็จ',text:e.message||'',confirmButtonColor:'#256e4e'}); }
+}
+
 // ===================== GLOBAL ERROR POPUP =====================
 // แสดงสาเหตุ error ทุกกรณีที่หลุดจาก try/catch (กันเงียบ) — กันเด้งซ้ำภายใน 4 วินาที
 let _lastErrAt = 0, _lastErrMsg = '';
@@ -1864,7 +1945,7 @@ window.addEventListener('unhandledrejection', ev=> showGlobalError('การท
 
 // ===================== AUTO UPDATE CHECK =====================
 // เวลาออกเวอร์ชันใหม่: แก้เลขใน APP_VERSION (index.html) และ version.json ให้ตรงกัน แล้วอัปโหลดทั้งสองไฟล์
-const APP_VERSION = '2026.11.15-1';
+const APP_VERSION = '2026.11.16-1';
 let _updPrompting = false;
 async function checkAppUpdate(){
   if(_updPrompting) return;
@@ -1967,7 +2048,7 @@ $(function(){ restoreSession(); });
 
 // ===================== ACTIVITY LOG VIEWER =====================
 PS.logs = { data: [] };
-const LOG_LABELS = {api_error:'ข้อผิดพลาดฐานข้อมูล/API',ui_error:'ข้อผิดพลาด (แจ้งผู้ใช้)',client_error:'ข้อผิดพลาดระบบ',login:'เข้าสู่ระบบ',logout:'ออกจากระบบ',create_job:'ออกรหัส/บันทึกใบงาน',edit_item:'แก้ไขไอเทม',approve_item:'อนุมัติไอเทม',delete_item:'ลบไอเทม',delete_job:'ลบใบงาน',master_add:'เพิ่มข้อมูลหลัก',master_delete:'ลบข้อมูลหลัก',export:'Export ข้อมูล',pr_issue:'ส่งรหัสกลับ PR ORDER',br_issue:'ส่งรหัสกลับ BRPR',import:'นำเข้าข้อมูล',import_history:'นำเข้าประวัติการซื้อ',master_edit:'ข้อมูลหลัก (แก้ไขชื่อ)',register:'สมัครผู้ใช้ใหม่',change_role:'เปลี่ยนสิทธิ์ผู้ใช้',delete_user:'ลบผู้ใช้',edit_profile:'แก้ไขโปรไฟล์',update_prices:'อัปเดตราคา (นำเข้า)',delete_all:'ลบข้อมูลทั้งหมด',rev_save:'หมวดรายได้ (เพิ่ม/แก้ไข)',rev_delete:'ลบหมวดรายได้',cgd_import:'นำเข้ารหัสกรมบัญชีกลาง',cgd_delete:'ลบรหัสกรมบัญชีกลาง',client_error:'ข้อผิดพลาดในระบบ'};
+const LOG_LABELS = {api_error:'ข้อผิดพลาดฐานข้อมูล/API',ui_error:'ข้อผิดพลาด (แจ้งผู้ใช้)',client_error:'ข้อผิดพลาดระบบ',login:'เข้าสู่ระบบ',logout:'ออกจากระบบ',create_job:'ออกรหัส/บันทึกใบงาน',edit_item:'แก้ไขไอเทม',approve_item:'อนุมัติไอเทม',delete_item:'ลบไอเทม',delete_job:'ลบใบงาน',master_add:'เพิ่มข้อมูลหลัก',master_delete:'ลบข้อมูลหลัก',export:'Export ข้อมูล',pr_issue:'ส่งรหัสกลับ PR ORDER',br_issue:'ส่งรหัสกลับ BRPR',import:'นำเข้าข้อมูล',import_history:'นำเข้าประวัติการซื้อ',add_announce:'เพิ่มประกาศ',edit_announce:'แก้ไขประกาศ',delete_announce:'ลบประกาศ',master_edit:'ข้อมูลหลัก (แก้ไขชื่อ)',register:'สมัครผู้ใช้ใหม่',change_role:'เปลี่ยนสิทธิ์ผู้ใช้',delete_user:'ลบผู้ใช้',edit_profile:'แก้ไขโปรไฟล์',update_prices:'อัปเดตราคา (นำเข้า)',delete_all:'ลบข้อมูลทั้งหมด',rev_save:'หมวดรายได้ (เพิ่ม/แก้ไข)',rev_delete:'ลบหมวดรายได้',cgd_import:'นำเข้ารหัสกรมบัญชีกลาง',cgd_delete:'ลบรหัสกรมบัญชีกลาง',client_error:'ข้อผิดพลาดในระบบ'};
 const FLD_LABELS = {cgd_name:'รายการ',cgd_unit:'หน่วย',cgd_max_price:'ราคาไม่เกิน',cgd_feature:'ลักษณะ',cgd_indication:'ข้อบ่งชี้',cgd_note:'หมายเหตุแพทย์',cgd_ref:'ตามหนังสือ',item_name:'ชื่อสินค้า',item_name_en:'ชื่อสินค้า (EN)',trade_name:'ชื่อการค้า',alias_name:'Alias',old_code:'รหัสเดิม',ref_no:'Ref.No',barcode:'Barcode',u_ntt_remark:'หมายเหตุ',cgd_code:'รหัสกรมบัญชีกลาง',u_ntt_revenue_cat:'หมวดรายได้',u_ntt_ms_type:'MSType',u_ntt_asset_pur:'MSType (ครุภัณฑ์)',items_group_code:'กลุ่มบัญชี',items_group_text:'ชื่อกลุ่มบัญชี',default_warehouse:'คลัง Default',inventory_uom:'หน่วยคลัง',inventory_uom_entry:'หน่วยคลัง (Entry)',sys_uom_name:'หน่วยนับ',purchase_vat_group:'VAT Group',u_ntt_interface:'Interface',purchase_item:'PurchaseItem',sales_item:'SalesItem',inventory_item:'InventoryItem',sys_cost:'ราคาทุน',sys_price:'ราคาขาย',status:'สถานะอนุมัติ',sync_sap:'Sync SAP',sync_his:'Sync HIS',is_inactive:'Inactive',issue_method:'Issue Method',photo1_url:'รูปภาพ 1',photo2_url:'รูปภาพ 2'};
 function fmtVal(v){ if(v===null||v===undefined||v==='') return '–'; if(v===true) return 'ใช่'; if(v===false) return 'ไม่'; return String(v); }
 // เทียบค่าเดิม/ใหม่ → [{f,from,to}] เฉพาะที่เปลี่ยนจริง
@@ -2054,6 +2135,7 @@ async function initApp(){
   if(typeof logAction==='function') logAction('login', CU?CU.username:null,'auth');
   $('#sb-name,#tb-name').text(CU.name);
   $('#sb-role').text(CU.role.toUpperCase());
+  setTimeout(function(){ if(typeof annBadge==='function') annBadge(); },900);
   $('#tb-role').text(CU.role.toUpperCase());
   if(CU.role==='admin'){
     $('.admin-only').show();
@@ -3747,10 +3829,11 @@ async function lnTestSend(){
 function switchPage(p){
   $('.page').removeClass('active');$('#'+p).addClass('active');
   $('.nav-item').removeClass('active');$(`.nav-item[data-page="${p}"]`).addClass('active');
-  const T={'page-create':'ออกรหัสพัสดุ','page-history':'ประวัติใบงาน','page-search':'ค้นหา / จัดการสถานะ','page-export':'Export CSV / DTW','page-master':'ข้อมูลหลัก (Master)','page-users':'จัดการผู้ใช้งาน','page-import':'นำเข้าข้อมูล','page-print':'พิมพ์ใบงาน','page-cgd':'รหัสกรมบัญชีกลาง','page-logs':'บันทึกการใช้งาน'};
+  const T={'page-create':'ออกรหัสพัสดุ','page-history':'ประวัติใบงาน','page-search':'ค้นหา / จัดการสถานะ','page-export':'Export CSV / DTW','page-master':'ข้อมูลหลัก (Master)','page-users':'จัดการผู้ใช้งาน','page-import':'นำเข้าข้อมูล','page-print':'พิมพ์ใบงาน','page-cgd':'รหัสกรมบัญชีกลาง','page-logs':'บันทึกการใช้งาน','page-announce':'ประกาศ'};
   $('#page-title').text(T[p]||'');
   if(p==='page-logs' && typeof loadLogs==='function') loadLogs();
   if(p==='page-linenotify') lnLoadPage();
+  if(p==='page-announce') annLoad();
   if(p==='page-linenotify') $('#page-title').text('ตั้งค่าแจ้งเตือนไลน์');
   // sync bottom nav (มือถือ)
   $('.bn-item').removeClass('active');$(`.bn-item[data-page="${p}"]`).addClass('active');
