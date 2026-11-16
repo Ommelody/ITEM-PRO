@@ -2127,7 +2127,7 @@ function exportLogsExcel(){
 }
 
 // ===================== ACTIVITY LOG VIEWER END =====================
-function logout(){if(typeof logAction==='function')logAction('logout', CU?CU.username:null,'auth');clearSession();CU=null;$('#app-main').hide();$('#auth-screen').css('display','flex');}
+function logout(){try{sessionStorage.removeItem('ann_first');}catch(_){} if(typeof logAction==='function')logAction('logout', CU?CU.username:null,'auth');clearSession();CU=null;$('#app-main').hide();$('#auth-screen').css('display','flex');}
 
 // ===================== INIT =====================
 async function initApp(){
@@ -2156,6 +2156,9 @@ async function initApp(){
   } else {
     $('body').removeClass('role-viewer');
   }
+  // ล็อคอินใหม่ → เปิดหน้าประกาศเป็นหน้าแรก (รีเฟรชในแท็บเดิมไม่เด้งซ้ำ)
+  let _annShown=false; try{ _annShown=sessionStorage.getItem('ann_first')==='1'; }catch(_){}
+  if(!_annShown){ try{ sessionStorage.setItem('ann_first','1'); }catch(_){} switchPage('page-announce'); }
   await loadMasterData();
   loadRevCats();
   initSelect2();
