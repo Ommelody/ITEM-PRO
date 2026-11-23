@@ -341,8 +341,13 @@ button,.btn,a,label,select,input,[onclick],.dtab-btn,tr[onclick]{touch-action:ma
 .detail-tabs{display:none}
 #hero-thumb img{display:block}
 @media(max-width:480px){#hero-thumb>div{width:76px!important;height:76px!important}}
-.detail-tab-wrap .dtab-panel[data-tab="3"],.detail-tab-wrap .dtab-panel[data-tab="4"]{display:none}
-.detail-tab-wrap .dtab-panel[data-tab="3"].active,.detail-tab-wrap .dtab-panel[data-tab="4"].active{display:block}
+.detail-tab-wrap .dtab-panel[data-tab="3"],.detail-tab-wrap .dtab-panel[data-tab="4"],.detail-tab-wrap .dtab-panel[data-tab="5"]{display:none}
+.detail-tab-wrap .dtab-panel[data-tab="3"].active,.detail-tab-wrap .dtab-panel[data-tab="4"].active,.detail-tab-wrap .dtab-panel[data-tab="5"].active{display:block}
+.il-row{padding:10px 2px;border-top:1px solid var(--s1)}.il-row:first-child{border-top:none}
+.il-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px}
+.il-ch{width:100%;border-collapse:collapse;margin-top:6px;font-size:12px;border:1px solid var(--s1)}
+.il-ch th{background:#f8fafc;color:var(--s5);font-weight:600;text-align:left;padding:4px 8px}
+.il-ch td{padding:4px 8px;border-top:1px solid var(--s1);word-break:break-word}
 .ph-tbl{width:100%;border-collapse:collapse;font-size:11.5px}
 .ph-tbl th{background:var(--s0);color:var(--s5);font-weight:600;text-align:left;padding:6px 8px;white-space:nowrap;position:sticky;top:0}
 .ph-tbl td{padding:6px 8px;border-top:1px solid var(--s1);vertical-align:top}
@@ -419,6 +424,7 @@ tr.mrow{cursor:pointer}tr.mrow:hover td{background:#f0fdf4}
   .dtab-btn[data-tab="2"]{display:none}
   .detail-tab-wrap[data-view="photo"] .dtab-panel:not([data-tab="3"]){display:none}
   .detail-tab-wrap[data-view="hist"] .dtab-panel:not([data-tab="4"]){display:none}
+  .detail-tab-wrap[data-view="log"] .dtab-panel:not([data-tab="5"]){display:none}
   /* ล็อกขนาดป็อบอัพบน PC — สลับแท็บแล้วไม่ยุบ/ขยาย */
   .detail-tab-wrap{min-height:400px;align-content:start}
   #view-mode{min-height:600px}
@@ -1773,6 +1779,29 @@ async function loadItemHistory(){
   }catch(e){ box.innerHTML='<div style="padding:20px;color:#991b1b;font-size:12px;word-break:break-word">โหลดประวัติไม่สำเร็จ: '+escHtml(e.message||'')+'<div style="color:var(--s5);margin-top:4px">ตรวจว่ารัน SQL_PURCHASE_HISTORY.sql แล้ว</div></div>'; }
 }
 
+// ===================== ITEM LOG TAB =====================
+async function loadItemLog(force){
+  const box=document.getElementById('ilog-box'); if(!box||(box.dataset.loaded&&!force)) return;
+  const code=box.dataset.code; box.dataset.loaded='1';
+  box.innerHTML='<div style="padding:30px;text-align:center;color:var(--s5);font-size:13px">กำลังโหลด Log...</div>';
+  try{
+    const en=encodeURIComponent(code); let rows;
+    try{ rows=await DB.get('activity_logs','select=*&order=created_at.desc&limit=300&or=(target_id.eq.'+en+',detail.ilike.*'+en+'*)'); }
+    catch(_){ rows=await DB.get('activity_logs','select=*&order=created_at.desc&limit=300&target_id=eq.'+en); }
+    rows=rows.filter(function(r){ return ['login','logout','export','client_error','api_error','ui_error'].indexOf(r.action)<0; });
+    if(!rows.length){ box.innerHTML='<div style="padding:34px 10px;text-align:center;color:var(--s4);font-size:13px">ยังไม่มีบันทึกการแก้ไขของรหัสนี้</div>'; return; }
+    const body=rows.map(function(r){
+      let o=null; try{ o=JSON.parse(r.detail); }catch(_){}
+      let det='';
+      if(o&&Array.isArray(o.changes)){
+        det=o.changes.length?'<table class="il-ch"><thead><tr><th>ฟิลด์</th><th>ค่าเดิม</th><th>ค่าใหม่</th></tr></thead><tbody>'+o.changes.map(function(c){ return '<tr><td style="font-weight:600">'+escHtml(c.f)+'</td><td style="color:#b91c1c">'+escHtml(c.from)+'</td><td style="color:#15803d;font-weight:600">'+escHtml(c.to)+'</td></tr>'; }).join('')+'</tbody></table>':'<div style="color:var(--s5);font-size:11.5px;margin-top:4px">บันทึกโดยไม่มีฟิลด์เปลี่ยน</div>';
+      } else { det='<div style="font-size:12px;color:var(--s6);margin-top:4px;word-break:break-word">'+escHtml(fmtLogDetail(r.detail))+'</div>'; }
+      return '<div class="il-row"><div class="il-h"><span class="badge bg">'+escHtml(logLabel(r.action))+'</span><b>'+escHtml(r.actor_name||r.actor_username||'–')+'</b><span style="color:var(--s4);margin-left:auto">'+new Date(r.created_at).toLocaleString('th-TH')+'</span></div>'+det+'</div>';
+    }).join('');
+    box.innerHTML='<div style="font-size:11.5px;color:var(--s5);margin-bottom:6px">พบ '+rows.length+' รายการ (ใหม่สุดอยู่บน)</div><div style="max-height:360px;overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--s1);border-radius:8px;padding:0 12px">'+body+'</div>';
+  }catch(e){ box.innerHTML='<div style="padding:20px;color:#991b1b;font-size:12px;word-break:break-word">โหลด Log ไม่สำเร็จ: '+escHtml(e.message||'')+'</div>'; }
+}
+
 // ===================== COST FROM LATEST PO =====================
 async function latestPOCost(code){
   const r=await DB.get('item_purchase_history','doc_type=eq.PO&item_code=eq.'+encodeURIComponent(code)+'&unit_price=gt.0&select=unit_price,posting_date,unit,doc_no,vendor_name&order=posting_date.desc.nullslast&limit=1');
@@ -2376,7 +2405,7 @@ window.addEventListener('unhandledrejection', ev=> showGlobalError('การท
 
 // ===================== AUTO UPDATE CHECK =====================
 // เวลาออกเวอร์ชันใหม่: แก้เลขใน APP_VERSION (index.html) และ version.json ให้ตรงกัน แล้วอัปโหลดทั้งสองไฟล์
-const APP_VERSION = '2026.11.18-1';
+const APP_VERSION = '2026.11.19-1';
 let _updPrompting = false;
 async function checkAppUpdate(){
   if(_updPrompting) return;
@@ -3333,6 +3362,7 @@ function openItemDetail(idx){
       <button type="button" class="dtab-btn" data-tab="2">ราคา & คลัง</button>
       <button type="button" class="dtab-btn" data-tab="3">📷 รูปภาพ</button>
       <button type="button" class="dtab-btn" data-tab="4">🧾 ประวัติการซื้อ</button>
+      <button type="button" class="dtab-btn" data-tab="5">🕘 Log</button>
     </div>
     <div class="detail-tab-wrap" data-view="info" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <table class="dtab-panel active" data-tab="1" style="width:100%;font-size:12px;border-collapse:collapse;margin-bottom:14px">
@@ -3365,6 +3395,7 @@ function openItemDetail(idx){
       </table>
       <div class="dtab-panel" data-tab="3" style="grid-column:1/-1;padding:4px 2px 14px"><div id="e-photos"></div></div>
       <div class="dtab-panel" data-tab="4" style="grid-column:1/-1;padding:2px 0 10px"><div id="hist-box" data-code="${it.item_code}"></div></div>
+      <div class="dtab-panel" data-tab="5" style="grid-column:1/-1;padding:2px 0 10px"><div id="ilog-box" data-code="${it.item_code}"></div></div>
     </div>
 
     <div style="display:flex;gap:7px;margin-top:14px;padding-top:14px;border-top:1px solid var(--s1);flex-wrap:wrap;justify-content:flex-end">
@@ -3436,8 +3467,9 @@ function bindDetailTabs(){
     const t=$(this).data('tab');
     $('.dtab-btn').removeClass('active'); $(this).addClass('active');
     $('.dtab-panel').removeClass('active').filter(function(){return String($(this).data('tab'))===String(t);}).addClass('active');
-    $('.detail-tab-wrap').attr('data-view', String(t)==='3'?'photo':String(t)==='4'?'hist':'info');
+    $('.detail-tab-wrap').attr('data-view', String(t)==='3'?'photo':String(t)==='4'?'hist':String(t)==='5'?'log':'info');
     if(String(t)==='4') loadItemHistory();
+    if(String(t)==='5') loadItemLog(true);
     $('.swal2-html-container').scrollTop(0);
   });
 }
