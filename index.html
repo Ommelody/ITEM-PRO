@@ -859,8 +859,8 @@ tr.mrow{cursor:pointer}tr.mrow:hover td{background:#f0fdf4}
       <div class="card">
         <div class="card-header"><h3>จัดการผู้ใช้งาน</h3><button class="btn btn-secondary btn-sm" onclick="loadUsers()">↻ รีเฟรช</button></div>
         <table class="dt">
-          <thead><tr><th>ชื่อ-นามสกุล</th><th>Username</th><th>สิทธิ์</th><th>วันที่สมัคร</th><th>เปลี่ยนสิทธิ์</th><th>ลบ</th></tr></thead>
-          <tbody id="users-tbody"><tr><td colspan="6" style="text-align:center;padding:24px;color:var(--s4)">กำลังโหลด...</td></tr></tbody>
+          <thead><tr><th>ชื่อ-นามสกุล</th><th>Username</th><th>สิทธิ์</th><th>วันที่สมัคร</th><th>เปลี่ยนสิทธิ์</th><th>แก้ไข</th><th>ลบ</th></tr></thead>
+          <tbody id="users-tbody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--s4)">กำลังโหลด...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -2405,7 +2405,7 @@ window.addEventListener('unhandledrejection', ev=> showGlobalError('การท
 
 // ===================== AUTO UPDATE CHECK =====================
 // เวลาออกเวอร์ชันใหม่: แก้เลขใน APP_VERSION (index.html) และ version.json ให้ตรงกัน แล้วอัปโหลดทั้งสองไฟล์
-const APP_VERSION = '2026.11.19-1';
+const APP_VERSION = '2026.11.24-1';
 let _updPrompting = false;
 async function checkAppUpdate(){
   if(_updPrompting) return;
@@ -2508,7 +2508,7 @@ $(function(){ restoreSession(); });
 
 // ===================== ACTIVITY LOG VIEWER =====================
 PS.logs = { data: [] };
-const LOG_LABELS = {api_error:'ข้อผิดพลาดฐานข้อมูล/API',ui_error:'ข้อผิดพลาด (แจ้งผู้ใช้)',client_error:'ข้อผิดพลาดระบบ',login:'เข้าสู่ระบบ',logout:'ออกจากระบบ',create_job:'ออกรหัส/บันทึกใบงาน',edit_item:'แก้ไขไอเทม',approve_item:'อนุมัติไอเทม',delete_item:'ลบไอเทม',delete_job:'ลบใบงาน',master_add:'เพิ่มข้อมูลหลัก',master_delete:'ลบข้อมูลหลัก',export:'Export ข้อมูล',pr_issue:'ส่งรหัสกลับ PR ORDER',br_issue:'ส่งรหัสกลับ BRPR',import:'นำเข้าข้อมูล',import_history:'นำเข้าประวัติการซื้อ',add_announce:'เพิ่มประกาศ',edit_announce:'แก้ไขประกาศ',delete_announce:'ลบประกาศ',master_edit:'ข้อมูลหลัก (แก้ไขชื่อ)',register:'สมัครผู้ใช้ใหม่',change_role:'เปลี่ยนสิทธิ์ผู้ใช้',delete_user:'ลบผู้ใช้',edit_profile:'แก้ไขโปรไฟล์',update_prices:'อัปเดตราคา (นำเข้า)',delete_all:'ลบข้อมูลทั้งหมด',rev_save:'หมวดรายได้ (เพิ่ม/แก้ไข)',rev_delete:'ลบหมวดรายได้',cgd_import:'นำเข้ารหัสกรมบัญชีกลาง',cgd_delete:'ลบรหัสกรมบัญชีกลาง',client_error:'ข้อผิดพลาดในระบบ'};
+const LOG_LABELS = {edit_user:'แก้ไขข้อมูลผู้ใช้',api_error:'ข้อผิดพลาดฐานข้อมูล/API',ui_error:'ข้อผิดพลาด (แจ้งผู้ใช้)',client_error:'ข้อผิดพลาดระบบ',login:'เข้าสู่ระบบ',logout:'ออกจากระบบ',create_job:'ออกรหัส/บันทึกใบงาน',edit_item:'แก้ไขไอเทม',approve_item:'อนุมัติไอเทม',delete_item:'ลบไอเทม',delete_job:'ลบใบงาน',master_add:'เพิ่มข้อมูลหลัก',master_delete:'ลบข้อมูลหลัก',export:'Export ข้อมูล',pr_issue:'ส่งรหัสกลับ PR ORDER',br_issue:'ส่งรหัสกลับ BRPR',import:'นำเข้าข้อมูล',import_history:'นำเข้าประวัติการซื้อ',add_announce:'เพิ่มประกาศ',edit_announce:'แก้ไขประกาศ',delete_announce:'ลบประกาศ',master_edit:'ข้อมูลหลัก (แก้ไขชื่อ)',register:'สมัครผู้ใช้ใหม่',change_role:'เปลี่ยนสิทธิ์ผู้ใช้',delete_user:'ลบผู้ใช้',edit_profile:'แก้ไขโปรไฟล์',update_prices:'อัปเดตราคา (นำเข้า)',delete_all:'ลบข้อมูลทั้งหมด',rev_save:'หมวดรายได้ (เพิ่ม/แก้ไข)',rev_delete:'ลบหมวดรายได้',cgd_import:'นำเข้ารหัสกรมบัญชีกลาง',cgd_delete:'ลบรหัสกรมบัญชีกลาง',client_error:'ข้อผิดพลาดในระบบ'};
 const FLD_LABELS = {cgd_name:'รายการ',cgd_unit:'หน่วย',cgd_max_price:'ราคาไม่เกิน',cgd_feature:'ลักษณะ',cgd_indication:'ข้อบ่งชี้',cgd_note:'หมายเหตุแพทย์',cgd_ref:'ตามหนังสือ',item_name:'ชื่อสินค้า',item_name_en:'ชื่อสินค้า (EN)',trade_name:'ชื่อการค้า',alias_name:'Alias',old_code:'รหัสเดิม',ref_no:'Ref.No',barcode:'Barcode',u_ntt_remark:'หมายเหตุ',cgd_code:'รหัสกรมบัญชีกลาง',u_ntt_revenue_cat:'หมวดรายได้',u_ntt_ms_type:'MSType',u_ntt_asset_pur:'MSType (ครุภัณฑ์)',items_group_code:'กลุ่มบัญชี',items_group_text:'ชื่อกลุ่มบัญชี',default_warehouse:'คลัง Default',inventory_uom:'หน่วยคลัง',inventory_uom_entry:'หน่วยคลัง (Entry)',sys_uom_name:'หน่วยนับ',purchase_vat_group:'VAT Group',u_ntt_interface:'Interface',purchase_item:'PurchaseItem',sales_item:'SalesItem',inventory_item:'InventoryItem',sys_cost:'ราคาทุน',sys_price:'ราคาขาย',status:'สถานะอนุมัติ',sync_sap:'Sync SAP',sync_his:'Sync HIS',is_inactive:'Inactive',issue_method:'Issue Method',photo1_url:'รูปภาพ 1',photo2_url:'รูปภาพ 2'};
 function fmtVal(v){ if(v===null||v===undefined||v==='') return '–'; if(v===true) return 'ใช่'; if(v===false) return 'ไม่'; return String(v); }
 // เทียบค่าเดิม/ใหม่ → [{f,from,to}] เฉพาะที่เปลี่ยนจริง
@@ -3814,10 +3814,11 @@ function buildPrintHTML(job,items,opts){
 async function loadUsers(){
   try{
     const users=await DB.get('users','order=created_at.desc');
-    if(!users.length){$('#users-tbody').html('<tr><td colspan="6" style="text-align:center;padding:24px">ไม่มีผู้ใช้งาน</td></tr>');return;}
+    if(!users.length){$('#users-tbody').html('<tr><td colspan="7" style="text-align:center;padding:24px">ไม่มีผู้ใช้งาน</td></tr>');return;}
+    window.USERS_CACHE=users;
     $('#users-tbody').html(users.map(u=>`<tr>
-      <td>${u.name}</td>
-      <td class="mono">${u.username}</td>
+      <td>${escHtml(u.name)}</td>
+      <td class="mono">${escHtml(u.username)}</td>
       <td><span class="badge ${u.role==='admin'?'bb':u.role==='viewer'?'ba':'bg'}">${u.role.toUpperCase()}</span></td>
       <td>${new Date(u.created_at).toLocaleDateString('th-TH')}</td>
       <td><select onchange="changeRole('${u.id}',this.value,'${u.username}')" style="padding:4px 8px;border:1px solid var(--s2);border-radius:6px;font-size:12px;font-family:inherit">
@@ -3825,9 +3826,41 @@ async function loadUsers(){
         <option value="staff" ${u.role==='staff'?'selected':''}>Staff</option>
         <option value="viewer" ${u.role==='viewer'?'selected':''}>Viewer (อ่านอย่างเดียว)</option>
       </select></td>
+      <td><button class="btn btn-secondary btn-xs" onclick="editUserModal('${u.id}')">✏️ แก้ไข</button></td>
       <td><button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}','${u.username}')" ${u.username===CU.username?'disabled title=ไม่สามารถลบตัวเองได้':''}>ลบ</button></td>
     </tr>`).join(''));
   }catch(e){Swal.fire('Error',e.message,'error');}
+}
+
+// แก้ไขโปรไฟล์/รหัสผ่านของผู้ใช้จากหน้าตั้งค่า > ผู้ใช้งาน
+function editUserModal(id){
+  const u=(window.USERS_CACHE||[]).find(x=>String(x.id)===String(id));
+  if(!u) return;
+  if(CU && String(u.id)===String(CU.id)){ showProfileModal(); return; } // ตัวเอง: ใช้หน้าต่างโปรไฟล์ (มีรูปด้วย)
+  const html=`<div style="text-align:left;font-size:13px"><div style="display:grid;gap:10px">
+    <div class="fg"><label style="font-size:12px">ชื่อ-นามสกุล</label><input id="eu-name" value="${escHtml(u.name)}" style="padding:7px 10px;font-size:13px"></div>
+    <div class="fg"><label style="font-size:12px">Username</label><input value="${escHtml(u.username)}" readonly style="padding:7px 10px;font-size:13px;background:var(--s0);color:var(--s5)"></div>
+    <div class="fg"><label style="font-size:12px">รหัสผ่านใหม่ (ว่างไว้ = ไม่เปลี่ยน)</label><input type="password" id="eu-pass" autocomplete="new-password" placeholder="อย่างน้อย 6 ตัวอักษร" style="padding:7px 10px;font-size:13px"></div>
+    <div class="fg"><label style="font-size:12px">ยืนยันรหัสผ่านใหม่</label><input type="password" id="eu-pass2" autocomplete="new-password" placeholder="ยืนยันรหัสผ่านใหม่" style="padding:7px 10px;font-size:13px"></div>
+  </div></div>`;
+  Swal.fire({title:`แก้ไขผู้ใช้ "${escHtml(u.username)}"`,html,width:'420px',showCancelButton:true,confirmButtonColor:'#256e4e',confirmButtonText:'💾 บันทึก',cancelButtonText:'ยกเลิก',
+    preConfirm:()=>{
+      const name=($('#eu-name').val()||'').trim(), pass=$('#eu-pass').val(), pass2=$('#eu-pass2').val();
+      if(!name) return Swal.showValidationMessage('กรุณากรอกชื่อ');
+      if(pass && pass.length<6) return Swal.showValidationMessage('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
+      if(pass && pass!==pass2) return Swal.showValidationMessage('รหัสผ่านไม่ตรงกัน');
+      return {name,pass};
+    }
+  }).then(async r=>{
+    if(!r.isConfirmed||!r.value) return;
+    const upd={name:r.value.name}; if(r.value.pass) upd.password=r.value.pass;
+    try{
+      await DB.patch('users',`id=eq.${u.id}`,upd);
+      if(typeof logAction==='function')logAction('edit_user',{username:u.username,name:upd.name,password_changed:!!r.value.pass},'user',u.username);
+      Swal.fire({toast:true,position:'top-end',icon:'success',title:'บันทึกเรียบร้อย',showConfirmButton:false,timer:2000});
+      loadUsers();
+    }catch(e){Swal.fire('Error',e.message,'error');}
+  });
 }
 
 async function changeRole(id,newRole,username){
