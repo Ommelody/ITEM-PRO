@@ -81,6 +81,8 @@ body.role-viewer .viewer-hide{display:none!important}
 .fg label{font-size:12px;font-weight:500;color:var(--s5)}
 .fg label .req{color:var(--g5)}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.g2>.fg,.g3>.fg,.g4>.fg{min-width:0}  /* กัน select ที่ข้อความยาวดันคอลัมน์จนไม่เท่ากัน */
+.fg select{max-width:100%}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
 .s2{grid-column:span 2}
@@ -889,6 +891,7 @@ tr.mrow{cursor:pointer}tr.mrow:hover td{background:#f0fdf4}
               <span>⬜ <b>Supplier</b> — ชื่อบริษัท (ผู้จำหน่าย)</span>
               <span>⬜ <b>RepName</b> — ชื่อผู้แทน</span>
               <span>⬜ <b>RepPhone</b> — เบอร์โทรผู้แทน</span>
+              <span>⬜ <b>RevCat</b> — รหัสหมวดรายได้ (ระบบจับคู่กับตารางหมวดรายได้ให้)</span>
               <span>⬜ <b>CGDCode</b> — เลขกรมบัญชีกลาง (ระบบจับคู่กับตารางรหัสกรมบัญชีกลางให้)</span>
               <span>⬜ <b>Interface</b> — Y หรือ N</span>
               <span>🔴 <b>UoMGroup</b> — รหัส UoM Group (Entry)</span>
@@ -2412,7 +2415,7 @@ window.addEventListener('unhandledrejection', ev=> showGlobalError('การท
 
 // ===================== AUTO UPDATE CHECK =====================
 // เวลาออกเวอร์ชันใหม่: แก้เลขใน APP_VERSION (index.html) และ version.json ให้ตรงกัน แล้วอัปโหลดทั้งสองไฟล์
-const APP_VERSION = '2026.11.25-4';
+const APP_VERSION = '2026.11.25-5';
 let _updPrompting = false;
 async function checkAppUpdate(){
   if(_updPrompting) return;
@@ -3452,7 +3455,7 @@ function openItemDetail(idx){
             ${CGD_DATA.map(g=>`<option value="${g.cgd_full||''}" ${(g.cgd_full||'')===(it.u_ntt_cgd_code||'')?'selected':''}>${g.cgd_full||''}</option>`).join('')}
           </select>
         </div>
-        <div style="margin-top:10px"><label style="font-size:12px;font-weight:600;color:var(--s6);display:block;margin-bottom:4px">หมวดรายได้</label>
+        <div class="fg"><label>หมวดรายได้</label>
           <select id="e-revcat" data-orig="${escHtml(it.u_ntt_revenue_cat||'')}" style="padding:7px 10px;font-size:13px;width:100%;border:1px solid var(--s2);border-radius:var(--rad)">
             <option value="">— ไม่ระบุ —</option>
             ${REV_DATA.map(g=>`<option value="${g.rev_full||''}" ${(g.rev_full||'')===(it.u_ntt_revenue_cat||'')?'selected':''}>${g.rev_full||''}</option>`).join('')}
@@ -4099,19 +4102,27 @@ function resolveCgdImport(v){
   const hit=rows.find(g=>String(g.cgd_code||'').trim()===t) || rows.find(g=>String(g.cgd_full||'').trim()===t);
   return hit ? (hit.cgd_full||hit.cgd_code||t) : t;
 }
+// จับคู่รหัสหมวดรายได้ที่กรอกในไฟล์ กับตารางหมวดรายได้ → ได้ค่า rev_full แบบเดียวกับที่เลือกในฟอร์ม (ไม่พบ = เก็บตามที่กรอก)
+function resolveRevImport(v){
+  const t=String(v==null?'':v).trim();
+  if(!t) return null;
+  const rows=(typeof REV_DATA!=='undefined'&&Array.isArray(REV_DATA))?REV_DATA:[];
+  const hit=rows.find(g=>String(g.rev_code||'').trim()===t) || rows.find(g=>String(g.rev_full||'').trim()===t);
+  return hit ? (hit.rev_full||hit.rev_code||t) : t;
+}
 function downloadTemplate(type){
   let ws, fileName;
   if(type==='item'){
     const headers = [
-      "MSType","ItemName","ItemGroup","EnglishName","OldCode","RefNo","Barcode","TradeName","Supplier","RepName","RepPhone","CGDCode",
+      "MSType","ItemName","ItemGroup","EnglishName","OldCode","RefNo","Barcode","TradeName","Supplier","RepName","RepPhone","CGDCode","RevCat",
       "Interface","UoMGroup","PurUom","SalUom","InvUom","IssueMethod","DefaultWH","PurchaseVATGroup","Cost","Sell"
     ];
     const example = [
-      "610100","ชื่อพัสดุภาษาไทย","1001","Item Name English","รหัสเดิม","REF-001","1234567890123","ชื่อการค้า","บริษัท ตัวอย่าง จำกัด","ชื่อผู้แทน","0812345678","",
+      "610100","ชื่อพัสดุภาษาไทย","1001","Item Name English","รหัสเดิม","REF-001","1234567890123","ชื่อการค้า","บริษัท ตัวอย่าง จำกัด","ชื่อผู้แทน","0812345678","","",
       "N","1","1","1","1","B","DS2","IEH07","1000","1200"
     ];
     const notes = [
-      "รหัสกลุ่ม MSType","ชื่อสินค้าภาษาไทย *จำเป็น","รหัสกลุ่มบัญชี (number) *จำเป็น","ชื่อภาษาอังกฤษ","รหัสเดิม","เลขอ้างอิง","บาร์โค้ด","ชื่อการค้า","ชื่อบริษัท/ผู้จำหน่าย","ชื่อผู้แทน","เบอร์โทรผู้แทน (พิมพ์เป็นข้อความเพื่อคงเลข 0 หน้า)","เลขรหัสเบิกกรมบัญชีกลาง (ถ้ามี) พิมพ์เป็นข้อความ",
+      "รหัสกลุ่ม MSType","ชื่อสินค้าภาษาไทย *จำเป็น","รหัสกลุ่มบัญชี (number) *จำเป็น","ชื่อภาษาอังกฤษ","รหัสเดิม","เลขอ้างอิง","บาร์โค้ด","ชื่อการค้า","ชื่อบริษัท/ผู้จำหน่าย","ชื่อผู้แทน","เบอร์โทรผู้แทน (พิมพ์เป็นข้อความเพื่อคงเลข 0 หน้า)","เลขรหัสเบิกกรมบัญชีกลาง (ถ้ามี) พิมพ์เป็นข้อความ","รหัสหมวดรายได้ เช่น 001 (ถ้ามี) พิมพ์เป็นข้อความ",
       "Y หรือ N","UoM Group Abs Entry","UoM Abs Entry (หน่วยซื้อ)","UoM Abs Entry (หน่วยขาย)","UoM Abs Entry (หน่วยคลัง)","B=Backflush M=Manual","รหัสคลัง เช่น DS2","VAT Group (ถ้าว่างจะคำนวณจาก MSType)","ราคาทุน","ราคาขาย"
     ];
     ws = XLSX.utils.aoa_to_sheet([headers, example, notes]);
@@ -4221,6 +4232,7 @@ async function processExcelImport(type){
             u_ntt_barcode:row.Barcode?String(row.Barcode):null,
             u_ntt_trade_name:row.TradeName||null,
             ...(String(row.CGDCode??'').trim()?{u_ntt_cgd_code:resolveCgdImport(row.CGDCode)}:{}),  // เลขกรมบัญชีกลาง
+            ...(String(row.RevCat??'').trim()?{u_ntt_revenue_cat:resolveRevImport(row.RevCat)}:{}),  // หมวดรายได้
             ...(String(row.Supplier??'').trim()?{main_supplier:String(row.Supplier).trim()}:{}),         // ชื่อบริษัท/ผู้จำหน่าย
             ...(String(row.RepName??'').trim()?{supplier_rep_name:String(row.RepName).trim()}:{}),       // ชื่อผู้แทน
             ...(String(row.RepPhone??'').trim()?{supplier_rep_phone:String(row.RepPhone).trim()}:{}),    // เบอร์โทรผู้แทน
